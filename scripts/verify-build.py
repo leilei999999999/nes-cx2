@@ -73,6 +73,7 @@ def main() -> int:
     parser.add_argument("--elf", type=pathlib.Path)
     parser.add_argument("--tns", type=pathlib.Path)
     parser.add_argument("--test-rom", type=pathlib.Path)
+    parser.add_argument("--sdk-root", type=pathlib.Path)
     parser.add_argument("--report", type=pathlib.Path)
     args = parser.parse_args()
 
@@ -161,11 +162,8 @@ def main() -> int:
         tns = args.tns
         check(tns.is_file() and 65536 <= tns.stat().st_size <= 16 * 1024 * 1024,
               "TNS package exists and has plausible size", passed, failed)
-        if tns.is_file() and shutil.which("nspire-tools"):
-            loader_result = subprocess.run(
-                ["nspire-tools", "_zehn_loader_path", ""], check=True, text=True,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            loader = pathlib.Path(loader_result.stdout.strip())
+        if tns.is_file() and args.sdk_root:
+            loader = args.sdk_root / "tools/zehn_loader/zehn_loader.tns"
             loader_ok = loader.is_file() and loader.stat().st_size > 0
             if loader_ok:
                 loader_bytes = loader.read_bytes()
@@ -173,7 +171,7 @@ def main() -> int:
                     loader_ok = stream.read(len(loader_bytes)) == loader_bytes
             check(loader_ok, "TNS begins with the matching Ndless Zehn loader", passed, failed)
         else:
-            check(False, "nspire-tools available for TNS loader check", passed, failed)
+            check(False, "Ndless SDK root supplied for TNS loader check", passed, failed)
 
     if args.test_rom:
         rom = args.test_rom
