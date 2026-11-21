@@ -20,7 +20,7 @@ def function_body(source: str, name: str, return_type: str) -> str:
     bs = chr(92)
     pattern = (
         bs + "b" + return_type + bs + "s+" + re.escape(name) +
-        bs + "s*" + bs + "(" + bs + "[^)]*" + bs + ")" + bs + "s*" + bs + "{"
+        bs + "s*" + bs + "(" + "[^)]*" + bs + ")" + bs + "s*" + bs + "{"
     )
     match = re.search(pattern, source)
     if not match:
