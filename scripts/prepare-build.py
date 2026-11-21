@@ -30,7 +30,7 @@ static int16_t g_pulse_mix[31];
 static int16_t g_tnd_mix[16][16][128];
 static int32_t g_dc_x, g_dc_y;
 static bool g_failed;
-static char g_error[160] = "USB audio not initialized";
+static char g_error[320] = "USB audio not initialized";
 /* Own timer 0 for audio timing, then restore the exact OS state at exit.
  * This follows the verified timer setup used by nMedia on CX II. */
 #define NES_TIMER_LOAD (*(volatile uint32_t *)0x900C0000U)
@@ -137,7 +137,10 @@ int nes_audio_open(int samples_per_sync, int sample_rate) {
     const char *status = NULL;
     g_usb = usb_audio_open(nes_audio_now_ms, &status);
     if (!g_usb) {
-        snprintf(g_error, sizeof(g_error), "%s", status ? status : "USB audio open failed");
+        char usb_debug[192];
+        usb_audio_debug_snapshot(usb_debug, sizeof(usb_debug));
+        snprintf(g_error, sizeof(g_error), "%.100s; %.190s",
+                 status ? status : "USB audio open failed", usb_debug);
         free(g_pcm); g_pcm = NULL; memset(&g_stream, 0, sizeof(g_stream)); return 0;
     }
     if (!usb_audio_start(g_usb, &g_stream, 0, 1, 1, 100)) {
@@ -289,10 +292,49 @@ def main():
             raise SystemExit("Unexpected usb_audio.h: final include guard not found.")
         header_text = (header_text[:final_guard] +
             "#ifdef __cplusplus\n}\n#endif\n\n" + header_text[final_guard:])
+    # Add a read-only FOTG210 register snapshot so an early root-port rejection
+    # is distinguishable from a device-enumeration or streaming failure.
+    declaration = "void usb_audio_debug_snapshot(char *text, size_t capacity);"
+    if declaration not in header_text:
+        final_guard = header_text.rfind("#endif")
+        if final_guard < 0:
+            raise SystemExit("Unexpected usb_audio.h: final include guard not found.")
+        header_text = (header_text[:final_guard] + declaration + "\\n" + header_text[final_guard:])
     usb_header.write_text(header_text)
 
     (out / "src/ndless/NesNspire_Audio.cpp").write_text(BRIDGE)
     (out / "src/ndless/NesNspire_Audio.h").write_text(HEADER)
+    usb_source = out / "src/audio/usb_audio.c"
+    usb_source_text = usb_source.read_text()
+    connected_marker = """static bool connected(void)
+{
+    return (PORT & 5U) == 5U && !(PORT & (1U << 7));
+}"""
+    snapshot_function = connected_marker + """
+
+/* Read-only diagnostics for the root-port/controller state at audio-open time. */
+void usb_audio_debug_snapshot(char *text, size_t capacity)
+{
+    if (!text || !capacity) return;
+    uint32_t port = PORT, command = CMD, otg = OTG, status = STS;
+    unsigned connected_bit = (port & 1U) != 0;
+    unsigned enabled_bit = (port & 4U) != 0;
+    unsigned suspended_bit = (port & (1U << 7)) != 0;
+    unsigned running_bit = (command & RUN) != 0;
+    unsigned speed = (otg >> 22) & 3U;
+    snprintf(text, capacity,
+        "USB regs PORT=%08lx CMD=%08lx OTG=%08lx STS=%08lx CAP=%08lx; "
+        "port_connected=%u port_enabled=%u port_suspended=%u controller_running=%u speed=%u",
+        (unsigned long)port, (unsigned long)command, (unsigned long)otg,
+        (unsigned long)status, (unsigned long)REG(0x00), connected_bit,
+        enabled_bit, suspended_bit, running_bit, speed);
+}"""
+    if "void usb_audio_debug_snapshot(" not in usb_source_text:
+        if connected_marker not in usb_source_text:
+            raise SystemExit("Unexpected usb_audio.c: connected() implementation changed.")
+        usb_source_text = usb_source_text.replace(connected_marker, snapshot_function, 1)
+        usb_source.write_text(usb_source_text)
+
     makefile = out / "Makefile"
     m = makefile.read_text()
     m = m.replace("\tsrc/ndless/InfoNES_System_Ndless.o \\\n", "\tsrc/ndless/InfoNES_System_Ndless.o \\\n\tsrc/ndless/NesNspire_Audio.o \\\n\tsrc/audio/usb_audio.o \\\n\tsrc/audio/usb_audio_formats.o \\\n\tsrc/audio/audio_buffer.o \\\n")
