@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a valid NROM-128 ROM that plays a continuous 440 Hz pulse tone."""
+"""Create a visual NROM test ROM that displays a color field and plays ~440 Hz."""
 from __future__ import annotations
 
 import argparse
@@ -7,40 +7,86 @@ import pathlib
 
 
 def build_rom() -> bytes:
-    # 6502 program at $8000. Pulse 1 timer = 253 -> about 440 Hz on NTSC NES.
-    code = bytes([
-        0x78,                   # SEI
-        0xD8,                   # CLD
-        0xA2, 0xFF,             # LDX #$FF
-        0x9A,                   # TXS
-        0xA9, 0x00,             # LDA #$00
-        0x8D, 0x10, 0x40,       # STA $4010: disable DMC IRQ/rate
-        0xA9, 0x40,             # LDA #$40
-        0x8D, 0x17, 0x40,       # STA $4017: inhibit frame IRQ
-        0xA9, 0x00,             # LDA #$00
-        0x8D, 0x01, 0x40,       # STA $4001: disable pulse sweep
-        0xA9, 0xBF,             # LDA #$BF: 50% duty, halt length, constant volume 15
-        0x8D, 0x00, 0x40,       # STA $4000
-        0xA9, 0xFD,             # LDA #$FD: timer low for ~440 Hz
-        0x8D, 0x02, 0x40,       # STA $4002
-        0xA9, 0x00,             # LDA #$00
-        0x8D, 0x03, 0x40,       # STA $4003: timer high and length reload
-        0xA9, 0x01,             # LDA #$01
-        0x8D, 0x15, 0x40,       # STA $4015: enable pulse 1
-        0x4C, 0x2D, 0x80,       # JMP $802D (stable idle loop)
-    ])
-    # Correct the loop address from the actual program length; keep it self-looping.
-    loop_addr = 0x8000 + len(code) - 3
-    code = code[:-2] + bytes((loop_addr & 0xFF, (loop_addr >> 8) & 0xFF))
-    prg = bytearray([0xEA] * 16384)  # NOP-filled unused ROM space
+    code = bytearray()
+    labels: dict[str, int] = {}
+    fixups: list[tuple[int, str]] = []
+
+    def emit(*values: int) -> None:
+        code.extend(values)
+
+    def label(name: str) -> None:
+        labels[name] = len(code)
+
+    def branch(opcode: int, target: str) -> None:
+        operand = len(code) + 1
+        emit(opcode, 0)
+        fixups.append((operand, target))
+
+    # CPU reset and PPU setup.
+    emit(0x78)  # SEI
+    emit(0xD8)  # CLD
+    emit(0xA2, 0xFF)  # LDX #$FF
+    emit(0x9A)  # TXS
+    emit(0xA9, 0x00, 0x8D, 0x00, 0x20)  # PPUCTRL = 0
+    emit(0xA9, 0x00, 0x8D, 0x01, 0x20)  # PPUMASK = 0 during setup
+
+    # Palette 0: black universal backdrop and bright orange/red tile color.
+    emit(0xA9, 0x3F, 0x8D, 0x06, 0x20)  # PPUADDR high = $3F
+    emit(0xA9, 0x00, 0x8D, 0x06, 0x20)  # PPUADDR low = $00
+    emit(0xA9, 0x0F, 0x8D, 0x07, 0x20)  # universal backdrop
+    emit(0xA9, 0x16, 0x8D, 0x07, 0x20)  # palette color 1
+
+    # Fill all 960 nametable tile entries with tile 1 (attribute table stays 0).
+    emit(0xA9, 0x20, 0x8D, 0x06, 0x20)  # PPUADDR = $2000
+    emit(0xA9, 0x00, 0x8D, 0x06, 0x20)
+    emit(0xA2, 0x03)  # LDX #3 -> 3 * 256 tile entries
+    emit(0xA0, 0x00)  # LDY #0
+    label("nametable_256")
+    emit(0xA9, 0x01, 0x8D, 0x07, 0x20)  # LDA #1; STA $2007
+    emit(0xC8)  # INY
+    branch(0xD0, "nametable_256")  # BNE until Y wraps
+    emit(0xCA)  # DEX
+    branch(0xD0, "nametable_256")  # repeat three 256-byte blocks
+    emit(0xA0, 0x00)  # LDY #0 for the last 192 tiles
+    label("nametable_192")
+    emit(0xA9, 0x01, 0x8D, 0x07, 0x20)
+    emit(0xC8)  # INY
+    emit(0xC0, 0xC0)  # CPY #$C0
+    branch(0xD0, "nametable_192")
+    emit(0xA9, 0x0A, 0x8D, 0x01, 0x20)  # show background
+
+    # Pulse 1: 50% duty, constant maximum volume, timer 253 ~= 440.4 Hz.
+    emit(0xA9, 0x00, 0x8D, 0x10, 0x40)  # disable DMC
+    emit(0xA9, 0x40, 0x8D, 0x17, 0x40)  # inhibit frame IRQ
+    emit(0xA9, 0x00, 0x8D, 0x01, 0x40)  # disable pulse sweep
+    emit(0xA9, 0xBF, 0x8D, 0x00, 0x40)  # 50% duty, length halt, constant volume 15
+    emit(0xA9, 0xFD, 0x8D, 0x02, 0x40)  # timer low = 253
+    emit(0xA9, 0x00, 0x8D, 0x03, 0x40)  # timer high = 0
+    emit(0xA9, 0x01, 0x8D, 0x15, 0x40)  # enable pulse 1
+
+    # Patch all relative branches and verify their destinations.
+    for operand, target in fixups:
+        displacement = labels[target] - (operand + 1)
+        if not -128 <= displacement <= 127:
+            raise ValueError(f"Branch to {target} is out of 6502 range")
+        code[operand] = displacement & 0xFF
+    for operand, target in fixups:
+        displacement = code[operand] if code[operand] < 128 else code[operand] - 256
+        if operand + 1 + displacement != labels[target]:
+            raise ValueError(f"Invalid branch fixup to {target}")
+
+    # Finish with a self-loop; hardware APU continues producing the tone.
+    loop_address = 0x8000 + len(code)
+    emit(0x4C, loop_address & 0xFF, (loop_address >> 8) & 0xFF)
+
+    prg = bytearray([0xEA] * 16384)  # NOP-filled unused space
     prg[:len(code)] = code
-    # NMI, RESET, IRQ vectors all point to the startup at $8000.
     prg[0x3FFA:0x4000] = bytes([0x00, 0x80, 0x00, 0x80, 0x00, 0x80])
-    header = bytearray(b"NES\x1a")
-    header += bytes([1, 1, 0, 0])  # 16 KiB PRG, 8 KiB CHR, mapper 0
-    header += bytes(8)
-    chr_rom = bytes(8192)
-    return bytes(header) + bytes(prg) + chr_rom
+
+    chr_rom = bytearray(8192)
+    chr_rom[16:24] = bytes([0xFF] * 8)  # tile 1 = solid palette color 1
+    header = b"NES\\x1a" + bytes([1, 1, 0, 0]) + bytes(8)
+    return header + bytes(prg) + bytes(chr_rom)
 
 
 def main() -> None:
@@ -50,7 +96,7 @@ def main() -> None:
     data = build_rom()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(data)
-    print(f"Created {args.output} ({len(data)} bytes), mapper 0, pulse 1 ~440 Hz")
+    print(f"Created {args.output} ({len(data)} bytes): red/orange screen, ~440 Hz pulse tone")
 
 
 if __name__ == "__main__":
