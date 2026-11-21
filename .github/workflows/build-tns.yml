@@ -106,11 +106,10 @@ jobs:
             --source-dir build/NesNspire \
             --elf build/NesNspire/NesNspire.elf \
             --tns build/NesNspire/NesNspire.tns \
+            --sdk-root "$GITHUB_WORKSPACE/ndless-sdk/ndless-sdk" \
             --test-rom output/USB-Audio-Tone-Test.nes.tns \
             --report output/verification-report.json
           sha256sum output/NesNspire-CX2-USB-Audio.tns output/USB-Audio-Tone-Test.nes.tns
-          test "$(sha256sum output/NesNspire-CX2-USB-Audio.tns | cut -d' ' -f1)" = \
-               "$(sha256sum builds/NesNspire-CX2-USB-Audio.tns 2>/dev/null | cut -d' ' -f1 || true)" || true
 
       - name: Commit compiled TI-Nspire files
         working-directory: ${{ github.workspace }}
