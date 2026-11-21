@@ -36,7 +36,7 @@ def build_rom() -> bytes:
     emit(0xA9, 0x0F, 0x8D, 0x07, 0x20)  # universal backdrop
     emit(0xA9, 0x16, 0x8D, 0x07, 0x20)  # palette color 1
 
-    # Fill all 960 nametable tile entries with tile 1 (attribute table stays 0).
+    # Fill all 960 nametable tile entries with tile 1.
     emit(0xA9, 0x20, 0x8D, 0x06, 0x20)  # PPUADDR = $2000
     emit(0xA9, 0x00, 0x8D, 0x06, 0x20)
     emit(0xA2, 0x03)  # LDX #3 -> 3 * 256 tile entries
@@ -53,6 +53,17 @@ def build_rom() -> bytes:
     emit(0xC8)  # INY
     emit(0xC0, 0xC0)  # CPY #$C0
     branch(0xD0, "nametable_192")
+
+    # Explicitly clear all 64 attribute bytes so the background uses palette 0.
+    emit(0xA9, 0x23, 0x8D, 0x06, 0x20)  # PPUADDR high = $23
+    emit(0xA9, 0xC0, 0x8D, 0x06, 0x20)  # PPUADDR low = $C0
+    emit(0xA9, 0x00, 0x8D, 0x07, 0x20)  # first attribute byte
+    emit(0xA2, 0x3F)  # 63 remaining bytes
+    label("attributes")
+    emit(0x8D, 0x07, 0x20)  # STA $2007
+    emit(0xCA)  # DEX
+    branch(0xD0, "attributes")
+
     emit(0xA9, 0x0A, 0x8D, 0x01, 0x20)  # show background
 
     # Pulse 1: 50% duty, constant maximum volume, timer 253 ~= 440.4 Hz.
@@ -85,7 +96,7 @@ def build_rom() -> bytes:
 
     chr_rom = bytearray(8192)
     chr_rom[16:24] = bytes([0xFF] * 8)  # tile 1 = solid palette color 1
-    header = b"NES\\x1a" + bytes([1, 1, 0, 0]) + bytes(8)
+    header = bytes((0x4E, 0x45, 0x53, 0x1A, 1, 1, 0, 0)) + bytes(8)
     return header + bytes(prg) + bytes(chr_rom)
 
 
