@@ -204,6 +204,11 @@ def main() -> int:
                 bytes((0x8D, 0x02, 0x40)),  # $4002 timer low
                 bytes((0x8D, 0x03, 0x40)),  # $4003 timer high/length
                 bytes((0x8D, 0x15, 0x40)),  # $4015 channel enable
+                bytes((0xA9, 0xBF, 0x8D, 0x00, 0x40)),  # constant-volume pulse
+                bytes((0xA9, 0xFD, 0x8D, 0x02, 0x40)),  # timer low = 253
+                bytes((0xA9, 0x00, 0x8D, 0x03, 0x40)),  # timer high = 0
+                bytes((0xA9, 0x01, 0x8D, 0x15, 0x40)),  # pulse 1 enabled
+                bytes((0xA9, 0x0A, 0x8D, 0x01, 0x20)),  # background enabled
             ))
             # The last instruction must jump to itself inside the mapped PRG.
             self_loop = any(
