@@ -85,6 +85,7 @@ def main() -> int:
     root = args.source_dir
     passed: list[str] = []
     failed: list[str] = []
+    warnings: list[str] = []
 
     system_path = root / "src/ndless/InfoNES_System_Ndless.cpp"
     bridge_path = root / "src/ndless/NesNspire_Audio.cpp"
@@ -205,20 +206,50 @@ def main() -> int:
                 bytes((0x8D, 0x15, 0x40)),  # $4015 channel enable
             ))
             # The last instruction must jump to itself inside the mapped PRG.
-            loop_index = len(prg) - 3
-            loop_target = prg[loop_index + 1] | (prg[loop_index + 2] << 8)
-            valid = valid and prg[loop_index] == 0x4C
-            valid = valid and loop_target == 0x8000 + loop_index
+            self_loop = any(
+                prg[i] == 0x4C and
+                (prg[i + 1] | (prg[i + 2] << 8)) == 0x8000 + i
+                for i in range(len(prg) - 2)
+            )
+            valid = valid and self_loop
+            # The visual test ROM's tile 1 must contain visible, non-empty CHR data.
+            if len(data) == 16 + 16384 + 8192:
+                chr_rom = data[16 + 16384:]
+                valid = valid and chr_rom[16:24] == bytes([0xFF] * 8)
         check(valid, "generated audio test ROM is valid NROM and programs pulse channel 1",
               passed, failed)
 
-    report = {"passed": passed, "failed": failed, "ok": not failed}
+    # The current bridge still does not port nMedia's complete USB host-session
+    # lease and native route/state callbacks. Compilation cannot validate that
+    # hardware ownership path, so make the known limitation visible in the report.
+    integration_requirements = (
+        "usb_host_session_prepare",
+        "usb_audio_set_route_lookup",
+        "usb_audio_set_state_lookup",
+        "usb_controller_set_periodic_service",
+    )
+    if bridge_path.is_file():
+        bridge_text = bridge_path.read_text(errors="replace")
+        missing = [name for name in integration_requirements if name not in bridge_text]
+        if missing:
+            warnings.append(
+                "USB host integration incomplete: missing " + ", ".join(missing) +
+                ". Successful CI checks do not prove USB DAC playback on calculator hardware."
+            )
+    warnings.append(
+        "Physical playback has not been tested by CI; use USB-Audio-Tone-Test.nes.tns "
+        "with a class-compliant USB audio DAC and confirm an audible steady tone."
+    )
+
+    report = {"passed": passed, "failed": failed, "warnings": warnings, "ok": not failed}
     print()
-    print(f"USB-audio verification: {len(passed)} passed, {len(failed)} failed")
+    print(f"USB-audio verification: {len(passed)} passed, {len(failed)} failed, {len(warnings)} warnings")
     for item in passed:
         print(f"PASS  {item}")
     for item in failed:
         print(f"FAIL  {item}")
+    for item in warnings:
+        print(f"WARN  {item}")
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, indent=2) + chr(10))
