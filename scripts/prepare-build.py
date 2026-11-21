@@ -32,10 +32,24 @@ static int16_t g_tnd_mix[16][16][128];
 static int32_t g_dc_x, g_dc_y;
 static bool g_failed;
 static char g_error[160] = "USB audio not initialized";
+/* Ndless initializes timer 0 on colour models at 32768 Hz.
+ * Read its down-counter only; do not reconfigure or steal the OS timer. */
+#define NES_TIMER_VALUE (*(volatile uint32_t *)0x900C0004U)
+#define NES_TIMER_TICKS_PER_SECOND 32768U
+static uint32_t g_timer_last;
+static uint64_t g_timer_ticks;
+static bool g_timer_started;
 static uint32_t nes_audio_now_ms(void) {
-    clock_t ticks = clock();
-    if (ticks < 0 || CLOCKS_PER_SEC <= 0) return 0;
-    return (uint32_t)(((uint64_t)ticks * 1000ULL) / CLOCKS_PER_SEC);
+    uint32_t current = NES_TIMER_VALUE;
+    if (!g_timer_started) {
+        g_timer_last = current;
+        g_timer_ticks = 0;
+        g_timer_started = true;
+        return 0;
+    }
+    g_timer_ticks += (uint32_t)(g_timer_last - current);
+    g_timer_last = current;
+    return (uint32_t)((g_timer_ticks * 1000ULL) / NES_TIMER_TICKS_PER_SECOND);
 }
 extern "C" bool audio_platform_cx2(void) {
     return *(volatile uint32_t *)0x900a0000U == 0x202U;
@@ -60,6 +74,9 @@ static void build_mixer(void) {
        }
 }
 void nes_audio_init(void) {
+    g_timer_last = NES_TIMER_VALUE;
+    g_timer_ticks = 0;
+    g_timer_started = true;
     build_mixer(); g_dc_x = g_dc_y = 0; g_failed = false;
     strcpy(g_error, "USB audio not initialized");
 }
@@ -118,7 +135,9 @@ void nes_audio_service(void) {
     if (!g_usb || g_failed) return;
     if (!usb_audio_service(g_usb)) {
         g_failed = true; g_stream.failed = true;
-        snprintf(g_error, sizeof(g_error), "%s", usb_audio_error(g_usb));
+        snprintf(g_error, sizeof(g_error), "%s [timer=%lu ms raw=%08lx]",
+                 usb_audio_error(g_usb), (unsigned long)nes_audio_now_ms(),
+                 (unsigned long)NES_TIMER_VALUE);
     }
 }
 void nes_audio_close(void) {
@@ -179,11 +198,16 @@ def main():
     args = ap.parse_args()
     tmp = pathlib.Path("build-input")
     shutil.rmtree(tmp, ignore_errors=True)
-    tmp.mkdir()
-    for archive in (args.nes_zip, args.nmedia_zip):
-        with zipfile.ZipFile(archive) as zf: zf.extractall(tmp)
-    nes = find_root(tmp, "InfoNES_System_Ndless.cpp")
-    nmedia = find_root(tmp, "usb_audio.c")
+    nes_tmp = tmp / "nes"
+    nmedia_tmp = tmp / "nmedia"
+    nes_tmp.mkdir(parents=True)
+    nmedia_tmp.mkdir(parents=True)
+    with zipfile.ZipFile(args.nes_zip) as zf:
+        zf.extractall(nes_tmp)
+    with zipfile.ZipFile(args.nmedia_zip) as zf:
+        zf.extractall(nmedia_tmp)
+    nes = find_root(nes_tmp, "InfoNES_System_Ndless.cpp")
+    nmedia = find_root(nmedia_tmp, "usb_audio.c")
     out = pathlib.Path(args.out).resolve()
     shutil.rmtree(out, ignore_errors=True)
     shutil.copytree(nes, out, ignore=shutil.ignore_patterns(".git", "*.o", "*.elf", "*.zehn", "*.tns"))
@@ -193,6 +217,25 @@ def main():
         dst = out / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
+
+    # usb_audio.c is compiled as C and called from C++; preserve C symbol names.
+    usb_header = out / "src/audio/usb_audio.h"
+    header_text = usb_header.read_text()
+    if 'extern "C" {' not in header_text:
+        include_marker = '#include "input.h"'
+        if include_marker not in header_text:
+            raise SystemExit("Unexpected usb_audio.h: input.h include not found.")
+        header_text = header_text.replace(
+            include_marker,
+            include_marker + '\\n\\n#ifdef __cplusplus\\nextern "C" {\\n#endif",
+            1)
+        final_guard = header_text.rfind("#endif")
+        if final_guard < 0:
+            raise SystemExit("Unexpected usb_audio.h: final include guard not found.")
+        header_text = (header_text[:final_guard] +
+            "#ifdef __cplusplus\\n}\\n#endif\\n\\n" + header_text[final_guard:])
+    usb_header.write_text(header_text)
+
     (out / "src/ndless/NesNspire_Audio.cpp").write_text(BRIDGE)
     (out / "src/ndless/NesNspire_Audio.h").write_text(HEADER)
     makefile = out / "Makefile"
