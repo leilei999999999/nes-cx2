@@ -43,7 +43,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git curl libgmp-dev libmpfr-dev libmpc-dev python3-dev
+          sudo apt-get install -y build-essential git curl libgmp-dev libmpfr-dev libmpc-dev python3-dev php-cli
 
       - name: Checkout Ndless SDK
         uses: actions/checkout@v4
@@ -61,6 +61,17 @@ jobs:
         run: |
           echo "$GITHUB_WORKSPACE/ndless-sdk/ndless-sdk/toolchain/install/bin" >> "$GITHUB_PATH"
           echo "$GITHUB_WORKSPACE/ndless-sdk/ndless-sdk/bin" >> "$GITHUB_PATH"
+
+      - name: Build Ndless static libraries
+        shell: bash
+        run: |
+          SDK="$GITHUB_WORKSPACE/ndless-sdk/ndless-sdk"
+          make -C "$SDK/libsyscalls" -j"$(nproc)"
+          make -C "$SDK/libndls" -j"$(nproc)"
+          make -C "$SDK/thirdparty" nspireio
+          test -s "$SDK/lib/libsyscalls.a"
+          test -s "$SDK/lib/libndls.a"
+          test -s "$SDK/lib/libnspireio.a"
 
       - name: Compile .tns
         working-directory: build/NesNspire
