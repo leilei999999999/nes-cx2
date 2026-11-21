@@ -66,6 +66,119 @@ def function_body(source: str, name: str, return_type: str) -> str:
     return ""
 
 
+
+def simulate_audio_test_rom(data: bytes) -> tuple[bool, str]:
+    """Execute the test ROM's small 6502 program and inspect PPU/APU writes."""
+    if len(data) != 16 + 16384 + 8192:
+        return False, "wrong iNES file size"
+    if data[:4] != bytes((0x4E, 0x45, 0x53, 0x1A)):
+        return False, "invalid iNES magic"
+    if data[4:8] != bytes((1, 1, 0, 0)):
+        return False, "test ROM is not mapper-0 NROM-128 with 8 KiB CHR"
+
+    prg = data[16:16 + 16384]
+    memory = bytearray(65536)
+    memory[0x8000:0xC000] = prg
+    pc = prg[0x3FFC] | (prg[0x3FFD] << 8)
+    a = x = y = 0
+    zero = False
+    ppu_addr = 0
+    ppu_second_write = False
+    ppu_ctrl = ppu_mask = 0
+    ppu_data: dict[int, int] = {}
+    apu: dict[int, int] = {}
+    reached_idle = False
+
+    for instruction_count in range(10000):
+        instruction_address = pc
+        opcode = memory[pc]
+        pc = (pc + 1) & 0xFFFF
+
+        if opcode in (0x78, 0xD8):  # SEI, CLD
+            pass
+        elif opcode == 0x9A:  # TXS
+            pass
+        elif opcode == 0xA9:  # LDA immediate
+            a = memory[pc]
+            pc = (pc + 1) & 0xFFFF
+            zero = (a == 0)
+        elif opcode == 0xA2:  # LDX immediate
+            x = memory[pc]
+            pc = (pc + 1) & 0xFFFF
+            zero = (x == 0)
+        elif opcode == 0xA0:  # LDY immediate
+            y = memory[pc]
+            pc = (pc + 1) & 0xFFFF
+            zero = (y == 0)
+        elif opcode == 0x8D:  # STA absolute
+            address = memory[pc] | (memory[(pc + 1) & 0xFFFF] << 8)
+            pc = (pc + 2) & 0xFFFF
+            memory[address] = a
+            if address == 0x2000:
+                ppu_ctrl = a
+            elif address == 0x2001:
+                ppu_mask = a
+            elif address == 0x2006:
+                if not ppu_second_write:
+                    ppu_addr = ((a << 8) | (ppu_addr & 0x00FF)) & 0x3FFF
+                    ppu_second_write = True
+                else:
+                    ppu_addr = ((ppu_addr & 0x3F00) | a) & 0x3FFF
+                    ppu_second_write = False
+            elif address == 0x2007:
+                ppu_data[ppu_addr] = a
+                ppu_addr = (ppu_addr + (32 if (ppu_ctrl & 0x04) else 1)) & 0x3FFF
+            elif 0x4000 <= address <= 0x4017:
+                apu[address] = a
+        elif opcode == 0xC8:  # INY
+            y = (y + 1) & 0xFF
+            zero = (y == 0)
+        elif opcode == 0xCA:  # DEX
+            x = (x - 1) & 0xFF
+            zero = (x == 0)
+        elif opcode == 0xC0:  # CPY immediate
+            value = memory[pc]
+            pc = (pc + 1) & 0xFFFF
+            zero = (y == value)
+        elif opcode == 0xD0:  # BNE relative
+            offset = memory[pc]
+            pc = (pc + 1) & 0xFFFF
+            if not zero:
+                if offset & 0x80:
+                    offset -= 0x100
+                pc = (pc + offset) & 0xFFFF
+        elif opcode == 0x4C:  # JMP absolute
+            target = memory[pc] | (memory[(pc + 1) & 0xFFFF] << 8)
+            if target == instruction_address:
+                reached_idle = True
+                break
+            pc = target
+        else:
+            return False, f"unsupported 6502 opcode 0x{opcode:02X} at 0x{instruction_address:04X}"
+
+        if not 0x8000 <= pc < 0xC000:
+            return False, f"program counter escaped NROM PRG at 0x{pc:04X}"
+    else:
+        return False, "program did not reach its stable self-loop within 10,000 instructions"
+
+    nametable_ok = all(ppu_data.get(0x2000 + i) == 1 for i in range(960))
+    attributes_ok = all(ppu_data.get(0x23C0 + i) == 0 for i in range(64))
+    palette_ok = ppu_data.get(0x3F00) == 0x0F and ppu_data.get(0x3F01) == 0x16
+    apu_expected = {
+        0x4010: 0x00, 0x4017: 0x40, 0x4001: 0x00,
+        0x4000: 0xBF, 0x4002: 0xFD, 0x4003: 0x00, 0x4015: 0x01,
+    }
+    apu_ok = all(apu.get(address) == value for address, value in apu_expected.items())
+    chr_ok = data[16 + 16384 + 16:16 + 16384 + 24] == bytes((0xFF,) * 8)
+    screen_ok = ppu_ctrl == 0 and ppu_mask == 0x0A and nametable_ok and attributes_ok and palette_ok
+    ok = reached_idle and screen_ok and apu_ok and chr_ok
+    detail = (
+        f"instructions={instruction_count + 1}, idle_loop={reached_idle}, "
+        f"screen={screen_ok}, APU={apu_ok}, CHR={chr_ok}"
+    )
+    return ok, detail
+
+
 def run_text(command: list[str]) -> str:
     result = subprocess.run(command, check=True, text=True, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
@@ -196,36 +309,11 @@ def main() -> int:
         valid = False
         if rom.is_file():
             data = rom.read_bytes()
-            valid = (len(data) == 16 + 16384 + 8192
-                     and data[:4] == bytes((0x4E, 0x45, 0x53, 0x1A))
-                     and data[4] == 1 and data[5] == 1
-                     and (data[6] & 0xF0) == 0
-                     and data[16 + 0x3FFC:16 + 0x3FFE] == bytes((0x00, 0x80)))
-            prg = data[16:16 + 16384] if valid else b""
-            valid = valid and all(op in prg for op in (
-                bytes((0x8D, 0x00, 0x40)),  # $4000 pulse control
-                bytes((0x8D, 0x02, 0x40)),  # $4002 timer low
-                bytes((0x8D, 0x03, 0x40)),  # $4003 timer high/length
-                bytes((0x8D, 0x15, 0x40)),  # $4015 channel enable
-                bytes((0xA9, 0xBF, 0x8D, 0x00, 0x40)),  # constant-volume pulse
-                bytes((0xA9, 0xFD, 0x8D, 0x02, 0x40)),  # timer low = 253
-                bytes((0xA9, 0x00, 0x8D, 0x03, 0x40)),  # timer high = 0
-                bytes((0xA9, 0x01, 0x8D, 0x15, 0x40)),  # pulse 1 enabled
-                bytes((0xA9, 0x0A, 0x8D, 0x01, 0x20)),  # background enabled
-            ))
-            # The last instruction must jump to itself inside the mapped PRG.
-            self_loop = any(
-                prg[i] == 0x4C and
-                (prg[i + 1] | (prg[i + 2] << 8)) == 0x8000 + i
-                for i in range(len(prg) - 2)
-            )
-            valid = valid and self_loop
-            # The visual test ROM's tile 1 must contain visible, non-empty CHR data.
-            if len(data) == 16 + 16384 + 8192:
-                chr_rom = data[16 + 16384:]
-                valid = valid and chr_rom[16:24] == bytes([0xFF] * 8)
-        check(valid, "generated audio test ROM is valid NROM and programs pulse channel 1",
-              passed, failed)
+            valid, simulation_detail = simulate_audio_test_rom(data)
+        else:
+            simulation_detail = "ROM file is missing"
+        check(valid, "6502 test ROM executes to idle and produces the expected PPU/APU writes: "
+              + simulation_detail, passed, failed)
 
     # The current bridge still does not port nMedia's complete USB host-session
     # lease and native route/state callbacks. Compilation cannot validate that
