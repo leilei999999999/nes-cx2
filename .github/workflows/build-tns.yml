@@ -1,0 +1,81 @@
+name: Build NESNspire for TI-Nspire CX II
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-tns.yml"
+      - "scripts/**"
+      - "*.zip"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Locate uploaded source archives
+        id: archives
+        shell: bash
+        run: |
+          NES_ZIP="$(find . -maxdepth 2 -type f -iname 'NesNspire*.zip' -print -quit)"
+          MEDIA_ZIP="$(find . -maxdepth 2 -type f -iname 'Nspire-MediaPlayer*.zip' -print -quit)"
+          test -n "$NES_ZIP" || { echo "NesNspire source ZIP not found"; exit 1; }
+          test -n "$MEDIA_ZIP" || { echo "Nspire-MediaPlayer source ZIP not found"; exit 1; }
+          echo "nes_zip=$NES_ZIP" >> "$GITHUB_OUTPUT"
+          echo "media_zip=$MEDIA_ZIP" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare NESNspire with USB audio
+        run: |
+          python3 scripts/prepare-build.py \
+            --nes-zip "${{ steps.archives.outputs.nes_zip }}" \
+            --nmedia-zip "${{ steps.archives.outputs.media_zip }}" \
+            --out build/NesNspire
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git curl libgmp-dev libmpfr-dev libmpc-dev python3-dev
+
+      - name: Checkout Ndless SDK
+        uses: actions/checkout@v4
+        with:
+          repository: ndless-nspire/ndless
+          path: ndless-sdk
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Build ARM toolchain
+        working-directory: ndless-sdk/ndless-sdk/toolchain
+        run: ./build_toolchain.sh
+
+      - name: Add Ndless tools to PATH
+        run: |
+          echo "$GITHUB_WORKSPACE/ndless-sdk/ndless-sdk/toolchain/install/bin" >> "$GITHUB_PATH"
+          echo "$GITHUB_WORKSPACE/ndless-sdk/ndless-sdk/bin" >> "$GITHUB_PATH"
+
+      - name: Compile .tns
+        working-directory: build/NesNspire
+        run: |
+          make clean
+          make -j"$(nproc)"
+          test -s NesNspire.tns
+          mkdir -p "$GITHUB_WORKSPACE/output"
+          cp NesNspire.tns "$GITHUB_WORKSPACE/output/NesNspire-CX2-USB-Audio.tns"
+          cp -f InfoNES-log.tns "$GITHUB_WORKSPACE/output/" 2>/dev/null || true
+
+      - name: Upload TI-Nspire files
+        uses: actions/upload-artifact@v4
+        with:
+          name: NesNspire-CX2-TNS
+          path: output/*.tns
+          if-no-files-found: error
+          retention-days: 30
