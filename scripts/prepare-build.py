@@ -210,14 +210,14 @@ def main():
     reported = true;
   }
 }""")
-    s = re.sub(r"void InfoNES_SoundInit\\(void\\)\\s*\\{\\s*\\}", "void InfoNES_SoundInit(void) { nes_audio_init(); }", s)
-    s = re.sub(r"int\\s+InfoNES_SoundOpen\\(int s, int r\\)\\s*\\{[^}]*\\}", """int InfoNES_SoundOpen(int s, int r) {
+    s = re.sub(r"void InfoNES_SoundInit\(void\)\s*\\{\s*\\}", "void InfoNES_SoundInit(void) { nes_audio_init(); }", s)
+    s = re.sub(r"int\s+InfoNES_SoundOpen\(int s, int r\)\s*\\{[^}]*\\}", """int InfoNES_SoundOpen(int s, int r) {
   int ok = nes_audio_open(s, r);
   log_message("USB audio open: %s (%d Hz, %d samples/frame): %s", ok ? "ready" : "unavailable", r, s, nes_audio_error());
   return ok;
 }""", s)
-    s = re.sub(r"void InfoNES_SoundClose\\(void\\)\\s*\\{\\s*\\}", "void InfoNES_SoundClose(void) { nes_audio_close(); }", s)
-    s = re.sub(r"void InfoNES_SoundOutput\\(int s, BYTE \\*w1, BYTE \\*w2, BYTE \\*w3, BYTE \\*w4, BYTE \\*w5\\)\\s*\\{[^}]*\\}", """void InfoNES_SoundOutput(int s, BYTE *w1, BYTE *w2, BYTE *w3, BYTE *w4, BYTE *w5) {
+    s = re.sub(r"void InfoNES_SoundClose\(void\)\s*\\{\s*\\}", "void InfoNES_SoundClose(void) { nes_audio_close(); }", s)
+    s = re.sub(r"void InfoNES_SoundOutput\(int s, BYTE \*w1, BYTE \*w2, BYTE \*w3, BYTE \*w4, BYTE \*w5\)\s*\\{[^}]*\\}", """void InfoNES_SoundOutput(int s, BYTE *w1, BYTE *w2, BYTE *w3, BYTE *w4, BYTE *w5) {
   nes_audio_output(s, w1, w2, w3, w4, w5);
 }""", s)
     if "nes_audio_output(s, w1" not in s or "nes_audio_service();" not in s:
