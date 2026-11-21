@@ -296,15 +296,15 @@ def main():
     # is distinguishable from a device-enumeration or streaming failure.
     declaration = "void usb_audio_debug_snapshot(char *text, size_t capacity);"
     if declaration not in header_text:
-        linkage_close = "#ifdef __cplusplus\\n}\\n#endif"
+        linkage_close = "#ifdef __cplusplus" + chr(10) + "}" + chr(10) + "#endif"
         if linkage_close in header_text:
             header_text = header_text.replace(
-                linkage_close, declaration + "\\n" + linkage_close, 1)
+                linkage_close, declaration + chr(10) + linkage_close, 1)
         else:
             final_guard = header_text.rfind("#endif")
             if final_guard < 0:
                 raise SystemExit("Unexpected usb_audio.h: final include guard not found.")
-            header_text = header_text[:final_guard] + declaration + "\\n" + header_text[final_guard:]
+            header_text = header_text[:final_guard] + declaration + chr(10) + header_text[final_guard:]
     usb_header.write_text(header_text)
 
     (out / "src/ndless/NesNspire_Audio.cpp").write_text(BRIDGE)
