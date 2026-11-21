@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -71,6 +71,19 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/output"
           cp NesNspire.tns "$GITHUB_WORKSPACE/output/NesNspire-CX2-USB-Audio.tns"
           cp -f InfoNES-log.tns "$GITHUB_WORKSPACE/output/" 2>/dev/null || true
+
+      - name: Commit compiled .tns to repository
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p builds
+          cp output/NesNspire-CX2-USB-Audio.tns builds/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add builds/NesNspire-CX2-USB-Audio.tns
+          if ! git diff --cached --quiet; then
+            git commit -m "Build NESNspire CX II .tns"
+            git push
+          fi
 
       - name: Upload TI-Nspire files
         uses: actions/upload-artifact@v4
