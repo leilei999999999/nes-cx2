@@ -131,6 +131,13 @@ def main() -> int:
             ("timer state is restored on audio close", "nes_timer_restore();" in function_body(bridge, "nes_audio_close", "void")),
             ("USB device is opened and streaming starts", "usb_audio_open(nes_audio_now_ms" in bridge and "usb_audio_start(g_usb" in bridge),
             ("USB service failures are surfaced", "usb_audio_service(g_usb)" in bridge and "g_stream.failed = true;" in bridge),
+            ("USB diagnostics include device descriptor and stream state",
+             "usb_audio_describe(g_usb" in bridge and "usb_audio_capture_stream(g_usb)" in bridge
+             and "usb_audio_last_stream()" in bridge and "usb_audio_last_control()" in bridge
+             and "usb_audio_transfer_fault()" in bridge),
+            ("emulator logs detailed USB diagnostics on failure",
+             "nes_audio_diagnostics(details, sizeof(details));" in function_body(system, "InfoNES_Wait", "void")
+             and "USB audio diagnostics:" in function_body(system, "InfoNES_Wait", "void")),
             ("audio ring buffer is power-of-two sized", "#define NES_AUDIO_CAPACITY 16384U" in bridge),
             ("audio ring buffer has safe prefill", "#define NES_AUDIO_PREFILL 9000U" in bridge),
         ]
@@ -197,6 +204,11 @@ def main() -> int:
                 bytes((0x8D, 0x03, 0x40)),  # $4003 timer high/length
                 bytes((0x8D, 0x15, 0x40)),  # $4015 channel enable
             ))
+            # The last instruction must jump to itself inside the mapped PRG.
+            loop_index = len(prg) - 3
+            loop_target = prg[loop_index + 1] | (prg[loop_index + 2] << 8)
+            valid = valid and prg[loop_index] == 0x4C
+            valid = valid and loop_target == 0x8000 + loop_index
         check(valid, "generated audio test ROM is valid NROM and programs pulse channel 1",
               passed, failed)
 
