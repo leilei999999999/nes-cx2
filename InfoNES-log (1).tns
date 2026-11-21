@@ -1,0 +1,15 @@
+NesNspire
+Program directory: /documents
+ROM browser found 11 ROM(s) in /documents
+ROM selected: /documents/USB-Audio-Tone-Test.nes.tns
+No speaker on Nspire
+ROM path: /documents/USB-Audio-Tone-Test.nes.tns
+SRAM path: /documents/USB-Audio-Tone-Test.nes.srm
+State path: /documents/USB-Audio-Tone-Test.nes.sta
+Loading details: title=USB-Audio-Tone-Test region=Unknown mapper=0 prg=16KB chr=8KB
+ROM: PRG=1x16KB CHR=1x8KB info1=0x00 info2=0x00
+USB audio open: unavailable (44100 Hz, 735 samples/frame): Connect USB audio via OTG before launching
+ROM loaded
+FrameSkip=0
+Quit
+Shutdown rc=0
