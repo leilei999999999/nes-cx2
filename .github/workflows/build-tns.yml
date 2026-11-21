@@ -78,6 +78,11 @@ jobs:
           make -C "$SDK/libndls" -j"$(nproc)"
           make -C "$SDK/thirdparty" nspireio
           make -C "$SDK/tools/genzehn" -j"$(nproc)"
+          # The compressed loader includes zlib.h from the vendored SDK submodule.
+          sed -i 's|-I zlib/|-I zlib/ -I ../../thirdparty/zlib|' "$SDK/tools/zehn_loader/Makefile"
+          make -C "$SDK/tools/zehn_loader" -j"$(nproc)"
+          test -s "$SDK/tools/zehn_loader/zehn_loader.tns"
+          test -s "$SDK/tools/zehn_loader/zehn_loader_compressed.tns"
           test -s "$SDK/lib/libsyscalls.a"
           test -s "$SDK/lib/libndls.a"
           test -s "$SDK/lib/libnspireio.a"
