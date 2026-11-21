@@ -167,7 +167,10 @@ def find_root(base, marker):
     matches = list(base.rglob(marker))
     if not matches:
         raise SystemExit(f"Archive does not contain {marker}")
-    return matches[0].parent
+    for parent in matches[0].parents:
+        if (parent / "Makefile").is_file():
+            return parent
+    raise SystemExit(f"Could not find project root containing Makefile for {marker}")
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--nes-zip", required=True)
