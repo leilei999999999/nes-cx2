@@ -318,6 +318,11 @@ def main():
     s = re.sub(r"int\s+InfoNES_SoundOpen\(int s, int r\)\s*\{[^}]*\}", """int InfoNES_SoundOpen(int s, int r) {
   int ok = nes_audio_open(s, r);
   log_message("USB audio open: %s (%d Hz, %d samples/frame): %s", ok ? "ready" : "unavailable", r, s, nes_audio_error());
+  if (!ok) {
+    char details[512];
+    nes_audio_diagnostics(details, sizeof(details));
+    log_message("USB audio open diagnostics: %s", details);
+  }
   return ok;
 }""", s)
     s = re.sub(r"void InfoNES_SoundClose\(void\)\s*\{\s*\}", "void InfoNES_SoundClose(void) { nes_audio_close(); }", s)
