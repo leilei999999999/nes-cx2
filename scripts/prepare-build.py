@@ -11,7 +11,6 @@ BRIDGE = r'''/* NES APU -> nMedia USB Audio Class output bridge. */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <time.h>
 #include <libndls.h>
 #include <os.h>
 #include "../audio/usb_audio.h"
@@ -32,21 +31,60 @@ static int16_t g_tnd_mix[16][16][128];
 static int32_t g_dc_x, g_dc_y;
 static bool g_failed;
 static char g_error[160] = "USB audio not initialized";
-/* Ndless initializes timer 0 on colour models at 32768 Hz.
- * Read its down-counter only; do not reconfigure or steal the OS timer. */
+/* Own timer 0 for audio timing, then restore the exact OS state at exit.
+ * This follows the verified timer setup used by nMedia on CX II. */
+#define NES_TIMER_LOAD (*(volatile uint32_t *)0x900C0000U)
 #define NES_TIMER_VALUE (*(volatile uint32_t *)0x900C0004U)
+#define NES_TIMER_CONTROL (*(volatile uint32_t *)0x900C0008U)
+#define NES_TIMER_CLOCK (*(volatile uint32_t *)0x900C0080U)
 #define NES_TIMER_TICKS_PER_SECOND 32768U
-static uint32_t g_timer_last;
+#define NES_TIMER_ENABLE_32BIT 0x82U
+#define NES_TIMER_CLOCK_32768HZ 0x0AU
+static uint32_t g_timer_last, g_timer_saved_load, g_timer_saved_control, g_timer_saved_clock;
 static uint64_t g_timer_ticks;
-static bool g_timer_started;
-static uint32_t nes_audio_now_ms(void) {
-    uint32_t current = NES_TIMER_VALUE;
-    if (!g_timer_started) {
-        g_timer_last = current;
-        g_timer_ticks = 0;
-        g_timer_started = true;
-        return 0;
+static bool g_timer_started, g_timer_saved;
+static void nes_timer_restore(void) {
+    if (!g_timer_saved) return;
+    NES_TIMER_CONTROL &= ~0x80U;
+    NES_TIMER_CONTROL = g_timer_saved_control & ~0x80U;
+    NES_TIMER_CLOCK = g_timer_saved_clock;
+    NES_TIMER_LOAD = g_timer_saved_load;
+    NES_TIMER_CONTROL = g_timer_saved_control;
+    g_timer_saved = false;
+    g_timer_started = false;
+}
+static bool nes_timer_start(void) {
+    if (g_timer_started) return true;
+    g_timer_saved_load = NES_TIMER_LOAD;
+    g_timer_saved_control = NES_TIMER_CONTROL;
+    g_timer_saved_clock = NES_TIMER_CLOCK;
+    g_timer_saved = true;
+    NES_TIMER_CONTROL &= ~0x80U;
+    NES_TIMER_CONTROL = NES_TIMER_ENABLE_32BIT & ~0x80U;
+    NES_TIMER_CLOCK = NES_TIMER_CLOCK_32768HZ;
+    NES_TIMER_LOAD = UINT32_MAX;
+    NES_TIMER_CONTROL = NES_TIMER_ENABLE_32BIT;
+    uint32_t previous = NES_TIMER_VALUE;
+    unsigned moving = 0;
+    for (unsigned polls = 0; polls < 131072U; ++polls) {
+        uint32_t current = NES_TIMER_VALUE;
+        uint32_t delta = previous - current;
+        if (polls >= 32768U && UINT32_MAX - current <= 8192U && delta && delta < 8192U) {
+            if (++moving >= 2U) {
+                g_timer_last = current;
+                g_timer_ticks = 0;
+                g_timer_started = true;
+                return true;
+            }
+        }
+        previous = current;
     }
+    nes_timer_restore();
+    return false;
+}
+static uint32_t nes_audio_now_ms(void) {
+    if (!g_timer_started) return 0;
+    uint32_t current = NES_TIMER_VALUE;
     g_timer_ticks += (uint32_t)(g_timer_last - current);
     g_timer_last = current;
     return (uint32_t)((g_timer_ticks * 1000ULL) / NES_TIMER_TICKS_PER_SECOND);
@@ -74,15 +112,17 @@ static void build_mixer(void) {
        }
 }
 void nes_audio_init(void) {
-    g_timer_last = NES_TIMER_VALUE;
-    g_timer_ticks = 0;
-    g_timer_started = true;
+    bool timer_ok = nes_timer_start();
     build_mixer(); g_dc_x = g_dc_y = 0; g_failed = false;
-    strcpy(g_error, "USB audio not initialized");
+    strcpy(g_error, timer_ok ? "USB audio not initialized" : "Hardware monotonic timer initialization failed");
 }
 int nes_audio_open(int samples_per_sync, int sample_rate) {
     (void)samples_per_sync;
     if (g_usb) return 1;
+    if (!g_timer_started && !nes_timer_start()) {
+        strcpy(g_error, "Hardware monotonic timer initialization failed");
+        return 0;
+    }
     g_sample_rate = sample_rate > 0 ? (uint32_t)sample_rate : NES_AUDIO_RATE;
     g_pcm = (int16_t *)malloc((size_t)NES_AUDIO_CAPACITY * 2U * sizeof(int16_t));
     if (!g_pcm) { strcpy(g_error, "PCM buffer allocation failed"); return 0; }
@@ -150,6 +190,7 @@ void nes_audio_close(void) {
     }
     free(g_pcm); g_pcm = NULL; memset(&g_stream, 0, sizeof(g_stream));
     g_write = 0; g_failed = false;
+    nes_timer_restore();
 }
 const char *nes_audio_error(void) { return g_error; }
 bool nes_audio_failed(void) { return g_failed; }
@@ -227,7 +268,7 @@ def main():
             raise SystemExit("Unexpected usb_audio.h: input.h include not found.")
         header_text = header_text.replace(
             include_marker,
-            include_marker + '\\n\\n#ifdef __cplusplus\\nextern "C" {\\n#endif",
+            include_marker + '\\n\\n#ifdef __cplusplus\\nextern "C" {\\n#endif',
             1)
         final_guard = header_text.rfind("#endif")
         if final_guard < 0:
