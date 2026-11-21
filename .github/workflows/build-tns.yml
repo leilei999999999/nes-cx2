@@ -40,6 +40,14 @@ jobs:
             --nmedia-zip "${{ steps.archives.outputs.media_zip }}" \
             --out build/NesNspire
 
+      - name: Test generated source and Python scripts
+        run: |
+          python3 -m py_compile scripts/prepare-build.py scripts/verify-build.py scripts/make-audio-test-rom.py
+          mkdir -p output
+          python3 scripts/verify-build.py \
+            --source-dir build/NesNspire \
+            --report output/pre-build-verification.json
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -76,33 +84,54 @@ jobs:
           test -x "$SDK/bin/genzehn"
           "$SDK/bin/genzehn" --help >/dev/null
 
-      - name: Compile .tns
+      - name: Compile and package NESNspire
         working-directory: build/NesNspire
         run: |
           make clean
           make -j"$(nproc)"
+          test -s NesNspire.elf
           test -s NesNspire.tns
           mkdir -p "$GITHUB_WORKSPACE/output"
           cp NesNspire.tns "$GITHUB_WORKSPACE/output/NesNspire-CX2-USB-Audio.tns"
           cp -f InfoNES-log.tns "$GITHUB_WORKSPACE/output/" 2>/dev/null || true
 
-      - name: Commit compiled .tns to repository
+      - name: Generate a known-good APU audio test ROM
+        run: |
+          python3 scripts/make-audio-test-rom.py \
+            --output output/USB-Audio-Tone-Test.nes.tns
+
+      - name: Verify linked executable, package, and audio test ROM
+        run: |
+          python3 scripts/verify-build.py \
+            --source-dir build/NesNspire \
+            --elf build/NesNspire/NesNspire.elf \
+            --tns build/NesNspire/NesNspire.tns \
+            --test-rom output/USB-Audio-Tone-Test.nes.tns \
+            --report output/verification-report.json
+          sha256sum output/NesNspire-CX2-USB-Audio.tns output/USB-Audio-Tone-Test.nes.tns
+          test "$(sha256sum output/NesNspire-CX2-USB-Audio.tns | cut -d' ' -f1)" = \
+               "$(sha256sum builds/NesNspire-CX2-USB-Audio.tns 2>/dev/null | cut -d' ' -f1 || true)" || true
+
+      - name: Commit compiled TI-Nspire files
         working-directory: ${{ github.workspace }}
         run: |
           mkdir -p builds
           cp output/NesNspire-CX2-USB-Audio.tns builds/
+          cp output/USB-Audio-Tone-Test.nes.tns builds/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add builds/NesNspire-CX2-USB-Audio.tns
+          git add builds/NesNspire-CX2-USB-Audio.tns builds/USB-Audio-Tone-Test.nes.tns
           if ! git diff --cached --quiet; then
-            git commit -m "Build NESNspire CX II .tns"
+            git commit -m "Build NESNspire and USB audio test ROM"
             git push
           fi
 
-      - name: Upload TI-Nspire files
+      - name: Upload TI-Nspire files and verification report
         uses: actions/upload-artifact@v4
         with:
           name: NesNspire-CX2-TNS
-          path: output/*.tns
+          path: |
+            output/*.tns
+            output/*verification.json
           if-no-files-found: error
           retention-days: 30
