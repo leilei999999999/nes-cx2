@@ -268,13 +268,13 @@ def main():
             raise SystemExit("Unexpected usb_audio.h: input.h include not found.")
         header_text = header_text.replace(
             include_marker,
-            include_marker + '\\n\\n#ifdef __cplusplus\\nextern "C" {\\n#endif',
+            include_marker + '\n\n#ifdef __cplusplus\nextern "C" {\n#endif',
             1)
         final_guard = header_text.rfind("#endif")
         if final_guard < 0:
             raise SystemExit("Unexpected usb_audio.h: final include guard not found.")
         header_text = (header_text[:final_guard] +
-            "#ifdef __cplusplus\\n}\\n#endif\\n\\n" + header_text[final_guard:])
+            "#ifdef __cplusplus\n}\n#endif\n\n" + header_text[final_guard:])
     usb_header.write_text(header_text)
 
     (out / "src/ndless/NesNspire_Audio.cpp").write_text(BRIDGE)
