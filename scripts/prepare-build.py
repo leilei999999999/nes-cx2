@@ -192,12 +192,25 @@ void nes_audio_close(void) {
     g_write = 0; g_failed = false;
     nes_timer_restore();
 }
+void nes_audio_diagnostics(char *out, size_t capacity) {
+    if (!out || !capacity) return;
+    char device[160];
+    usb_audio_describe(g_usb, device, sizeof(device));
+    if (g_usb) usb_audio_capture_stream(g_usb);
+    snprintf(out, capacity,
+        "error=%s; device=%s; stream=%s; control=%s; transfer=%s; queue=%lu..%lu; pcm_failed=%u; pcm_missed=%u",
+        g_error, device, usb_audio_last_stream(), usb_audio_last_control(),
+        usb_audio_transfer_fault(), (unsigned long)g_stream.pcm_begin,
+        (unsigned long)g_stream.pcm_end, g_stream.failed ? 1U : 0U,
+        g_stream.pcm_missed ? 1U : 0U);
+}
 const char *nes_audio_error(void) { return g_error; }
 bool nes_audio_failed(void) { return g_failed; }
 '''
 HEADER = r'''#ifndef NESNSPIRE_AUDIO_H
 #define NESNSPIRE_AUDIO_H
 #include <stdbool.h>
+#include <stddef.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -209,6 +222,7 @@ void nes_audio_service(void);
 void nes_audio_close(void);
 const char *nes_audio_error(void);
 bool nes_audio_failed(void);
+void nes_audio_diagnostics(char *out, size_t capacity);
 #ifdef __cplusplus
 }
 #endif
@@ -293,7 +307,10 @@ def main():
   static bool reported = false;
   nes_audio_service();
   if (nes_audio_failed() && !reported) {
+    char details[512];
+    nes_audio_diagnostics(details, sizeof(details));
     log_message("USB audio stopped: %s", nes_audio_error());
+    log_message("USB audio diagnostics: %s", details);
     reported = true;
   }
 }""")
