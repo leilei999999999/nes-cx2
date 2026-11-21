@@ -16,30 +16,35 @@ def check(ok: bool, message: str, passed: list[str], failed: list[str]) -> None:
 
 
 def function_body(source: str, name: str, return_type: str) -> str:
-    pattern = rf"\\b{return_type}\\s+{re.escape(name)}\\s*\\([^)]*\\)\\s*\\{{"
-    match = re.search(pattern, source, re.S)
+    # Construct regex escapes with chr() to keep this script's quoting unambiguous.
+    bs = chr(92)
+    pattern = (
+        bs + "b" + return_type + bs + "s+" + re.escape(name) +
+        bs + "s*" + bs + "(" + bs + "[^)]*" + bs + ")" + bs + "s*" + bs + "{"
+    )
+    match = re.search(pattern, source)
     if not match:
         return ""
 
     opening = match.end() - 1
     depth = 0
     state = "code"
-    quote = ""
+    quote = 0
     i = opening
     while i < len(source):
         ch = source[i]
         nxt = source[i + 1] if i + 1 < len(source) else ""
         if state == "line_comment":
-            if ch == "\\n":
+            if ord(ch) == 10:
                 state = "code"
         elif state == "block_comment":
             if ch == "*" and nxt == "/":
                 state = "code"
                 i += 1
         elif state == "string":
-            if ch == "\\\\":
+            if ord(ch) == 92:
                 i += 1
-            elif ch == quote:
+            elif ord(ch) == quote:
                 state = "code"
         elif state == "code":
             if ch == "/" and nxt == "/":
@@ -48,8 +53,8 @@ def function_body(source: str, name: str, return_type: str) -> str:
             elif ch == "/" and nxt == "*":
                 state = "block_comment"
                 i += 1
-            elif ch in ("\\\"", "'"):
-                quote = ch
+            elif ch in ('"', "'"):
+                quote = ord(ch)
                 state = "string"
             elif ch == "{":
                 depth += 1
@@ -119,13 +124,15 @@ def main() -> int:
             ("SoundOutput forwards all five APU channels", "nes_audio_output(s, w1, w2, w3, w4, w5);" in function_body(system, "InfoNES_SoundOutput", "void")),
             ("SoundClose releases audio bridge", "nes_audio_close();" in function_body(system, "InfoNES_SoundClose", "void")),
             ("frame wait services USB audio", "nes_audio_service();" in function_body(system, "InfoNES_Wait", "void")),
-            ("USB header has C linkage guard", 'extern "C" {' in c_header and c_header.count('extern "C" {') == 1 and "}\\n#endif" in c_header),
-            ("hardware timer is used instead of process clock", "NES_TIMER_VALUE" in bridge and "NES_TIMER_TICKS_PER_SECOND 32768U" in bridge and not re.search(r"\\bclock\\s*\\(", bridge)),
+            ("USB header has C linkage guard", 'extern "C" {' in c_header and c_header.count('extern "C" {') == 1
+             and "}" + chr(10) + "#endif" in c_header),
+            ("hardware timer is used instead of process clock", "NES_TIMER_VALUE" in bridge
+             and "NES_TIMER_TICKS_PER_SECOND 32768U" in bridge and "clock(" not in bridge),
             ("timer state is restored on audio close", "nes_timer_restore();" in function_body(bridge, "nes_audio_close", "void")),
             ("USB device is opened and streaming starts", "usb_audio_open(nes_audio_now_ms" in bridge and "usb_audio_start(g_usb" in bridge),
             ("USB service failures are surfaced", "usb_audio_service(g_usb)" in bridge and "g_stream.failed = true;" in bridge),
-            ("audio ring buffer is power-of-two sized", bool(re.search(r"#define\\s+NES_AUDIO_CAPACITY\\s+16384U", bridge))),
-            ("audio ring buffer has safe prefill", bool(re.search(r"#define\\s+NES_AUDIO_PREFILL\\s+9000U", bridge))),
+            ("audio ring buffer is power-of-two sized", "#define NES_AUDIO_CAPACITY 16384U" in bridge),
+            ("audio ring buffer has safe prefill", "#define NES_AUDIO_PREFILL 9000U" in bridge),
         ]
         for message, ok in checks:
             check(ok, message, passed, failed)
@@ -179,29 +186,30 @@ def main() -> int:
         if rom.is_file():
             data = rom.read_bytes()
             valid = (len(data) == 16 + 16384 + 8192
-                     and data[:4] == b"NES\\x1a"
+                     and data[:4] == bytes((0x4E, 0x45, 0x53, 0x1A))
                      and data[4] == 1 and data[5] == 1
                      and (data[6] & 0xF0) == 0
-                     and data[16 + 0x3FFC:16 + 0x3FFE] == b"\\x00\\x80")
+                     and data[16 + 0x3FFC:16 + 0x3FFE] == bytes((0x00, 0x80)))
             prg = data[16:16 + 16384] if valid else b""
             valid = valid and all(op in prg for op in (
-                b"\\x8d\\x00\\x40",  # $4000 pulse control
-                b"\\x8d\\x02\\x40",  # $4002 timer low
-                b"\\x8d\\x03\\x40",  # $4003 timer high/length
-                b"\\x8d\\x15\\x40",  # $4015 channel enable
+                bytes((0x8D, 0x00, 0x40)),  # $4000 pulse control
+                bytes((0x8D, 0x02, 0x40)),  # $4002 timer low
+                bytes((0x8D, 0x03, 0x40)),  # $4003 timer high/length
+                bytes((0x8D, 0x15, 0x40)),  # $4015 channel enable
             ))
         check(valid, "generated audio test ROM is valid NROM and programs pulse channel 1",
               passed, failed)
 
     report = {"passed": passed, "failed": failed, "ok": not failed}
-    print(f"\\nUSB-audio verification: {len(passed)} passed, {len(failed)} failed")
+    print()
+    print(f"USB-audio verification: {len(passed)} passed, {len(failed)} failed")
     for item in passed:
         print(f"PASS  {item}")
     for item in failed:
         print(f"FAIL  {item}")
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)
-        args.report.write_text(json.dumps(report, indent=2) + "\\n")
+        args.report.write_text(json.dumps(report, indent=2) + chr(10))
     return 1 if failed else 0
 
 
