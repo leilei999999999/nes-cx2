@@ -136,9 +136,12 @@ def main() -> int:
              "usb_audio_describe(g_usb" in bridge and "usb_audio_capture_stream(g_usb)" in bridge
              and "usb_audio_last_stream()" in bridge and "usb_audio_last_control()" in bridge
              and "usb_audio_transfer_fault()" in bridge),
-            ("emulator logs detailed USB diagnostics on failure",
+            ("emulator logs detailed USB diagnostics on stream failure",
              "nes_audio_diagnostics(details, sizeof(details));" in function_body(system, "InfoNES_Wait", "void")
              and "USB audio diagnostics:" in function_body(system, "InfoNES_Wait", "void")),
+            ("emulator logs detailed USB diagnostics when device open fails",
+             "nes_audio_diagnostics(details, sizeof(details));" in function_body(system, "InfoNES_SoundOpen", "int")
+             and "USB audio open diagnostics:" in function_body(system, "InfoNES_SoundOpen", "int")),
             ("audio ring buffer is power-of-two sized", "#define NES_AUDIO_CAPACITY 16384U" in bridge),
             ("audio ring buffer has safe prefill", "#define NES_AUDIO_PREFILL 9000U" in bridge),
         ]
