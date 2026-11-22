@@ -1,0 +1,32 @@
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man (U).nes.tns
+SRAM path: /documents/Mega Man (U).nes.srm
+State path: /documents/Mega Man (U).nes.sta
+Loading details: title=Mega Man (U) region=NTSC mapper=66 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x44
+USB audio open: ready (22050 Hz, 367 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/2; stream=running=1 scheduled=1 frame=8501 start=8 checked=8500 next=8564 generated=184269 cmd=00080011 sts=00004008 frindex=00001310 periodic=137a6000 expected=137a6000 async=138f1000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/2 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=182946..186069; pcm_failed=0; pcm_missed=0; started=1 pace=21123Hz applied=21007Hz frame=8501 measured=1 reserve=2777/2823 servo=-5490ppm; APU calls=507 samples=186069 nonzero[p1,p2,tri,noise,dpcm]=39167,34042,91024,0,0 peaks=255,255,255,0,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man (U).nes.tns
+SRAM path: /documents/Mega Man (U).nes.srm
+State path: /documents/Mega Man (U).nes.sta
+Loading details: title=Mega Man (U) region=NTSC mapper=66 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x44
+USB audio open: ready (22050 Hz, 367 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/2; stream=running=1 scheduled=1 frame=40468 start=8 checked=40468 next=40532 generated=845898 cmd=00080011 sts=00004008 frindex=00002eb4 periodic=12601000 expected=12601000 async=1274c000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/2 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=844497..848137; pcm_failed=0; pcm_missed=0; started=1 pace=20569Hz applied=21854Hz frame=40468 measured=1 reserve=3273/2823 servo=62480ppm; APU calls=2311 samples=848137 nonzero[p1,p2,tri,noise,dpcm]=257502,282486,243105,188092,0 peaks=255,255,255,15,0
+Shutdown rc=0
