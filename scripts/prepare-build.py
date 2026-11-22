@@ -458,6 +458,9 @@ NATIVE_FILES = [
     "src/platform/arm926_cpu_ram_span.h", "src/storage/usb/usb_host_session.c",
     "src/storage/usb/usb_host_session.h", "src/storage/usb/usb_phase_timing.h",
     "src/storage/usb/usb_registers.h", "src/storage/usb/usb_autoconnect.h",
+    "src/storage/nand_page_reader.h", "src/storage/nand_address.h",
+    "src/storage/cx_nand_reader.h", "src/storage/spi_nand_reader.h",
+    "src/player/app_task_io.h", "src/player/native_file_io.h",
     "src/sram.h",
 ]
 def find_root(base, marker):
