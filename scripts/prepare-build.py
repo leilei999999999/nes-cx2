@@ -757,14 +757,14 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     for phase in ("ApuC1EnvPhase", "ApuC1SweepPhase",
                   "ApuC2EnvPhase", "ApuC2SweepPhase", "ApuC4EnvPhase"):
         apu_text, changed = re.subn(
-            rf"(?m)^([ \\t]*)DWORD([ \\t]+{phase}[ \\t]*;)",
-            rf"\\g<1>int32_t\\g<2>",
+            rf"(?m)^([ \t]*)DWORD([ \t]+{phase}[ \t]*;)",
+            rf"\g<1>int32_t\g<2>",
             apu_text,
         )
         if changed != 1:
             raise SystemExit(f"Expected exactly one unsigned phase declaration for {phase}")
     if "#include <stdint.h>" not in apu_text:
-        apu_text = "#include <stdint.h>\\n" + apu_text
+        apu_text = "#include <stdint.h>\n" + apu_text
     apu_header = out / "src/InfoNES_pAPU.h"
     if not apu_header.is_file():
         raise SystemExit("Missing NES APU quality header: src/InfoNES_pAPU.h")
