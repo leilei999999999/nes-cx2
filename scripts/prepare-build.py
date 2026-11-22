@@ -775,7 +775,7 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
         ("ApuC2SweepPhase", 2, "ApuC2SweepDelay", 120),
     )
     for phase, old_step, delay, tick_rate in phase_timers:
-        decrement = rf"(?m)^([ \t]*){phase}[ \t]*-=[ \t]*{old_step};[ \t]*$"
+        decrement = rf"(?m)^([ \t]*){phase}[ \t]*-=[ \t]*{old_step};.*$"
         apu_text, changed = re.subn(
             decrement, rf"\g<1>{phase} -= {tick_rate};", apu_text)
         if changed != 1:
