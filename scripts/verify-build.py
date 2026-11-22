@@ -241,7 +241,7 @@ def main() -> int:
             ("USB header has C linkage guard", 'extern "C" {' in c_header and c_header.count('extern "C" {') == 1
              and "}" + chr(10) + "#endif" in c_header),
             ("hardware timer is used instead of process clock", "NES_TIMER_VALUE" in bridge
-             and "NES_TIMER_TICKS_PER_SECOND 32768U" in bridge and not re.search(r"(?<![A-Za-z0-9_])clock\\s*\\(", bridge)),
+             and "NES_TIMER_TICKS_PER_SECOND 32768U" in bridge and not re.search(r"(?<![A-Za-z0-9_])clock\s*\(", bridge)),
             ("timer state is restored on audio close", "nes_timer_restore();" in function_body(bridge, "nes_audio_close", "void")),
             ("USB device is opened and streaming starts", "usb_audio_open(nes_audio_now_ms" in bridge and "usb_audio_start(g_usb" in bridge),
             ("USB service failures are surfaced", "usb_audio_service(g_usb)" in bridge and "g_stream.failed = true;" in bridge),
