@@ -302,6 +302,11 @@ def main() -> int:
         check(apu_vsync_at >= 0 and apu_reset_at > apu_vsync_at and
               apu_first_render_at > apu_reset_at,
               "all five NES APU wave buffers are cleared before rendering each frame", passed, failed)
+        apu_header_path = root / "src/InfoNES_pAPU.h"
+        apu_header_text = apu_header_path.read_text(errors="replace") if apu_header_path.is_file() else ""
+        check("#define pAPU_QUALITY 2" in apu_header_text,
+              "APU uses 22.05 kHz / 367 samples per frame to reduce CX II CPU load",
+              passed, failed)
         check("#define LEAD 64U" in usb_source_text,
               "USB isochronous scheduling lead reduced to 64 ms", passed, failed)
 
