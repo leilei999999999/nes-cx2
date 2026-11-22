@@ -763,7 +763,7 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     if quality_changes != 1:
         raise SystemExit("Expected exactly one pAPU_QUALITY=3 setting in InfoNES_pAPU.h")
     apu_header.write_text(apu_header_text)
-    apu_vsync_match = re.search(r"void\s+InfoNES_pAPUVsync\s*\(\s*void\s*\)\s*\{\s*", apu_text)
+    apu_vsync_match = re.search(r"\bInfoNES_pAPUVsync\s*\([^)]*\)\s*\{\s*", apu_text)
     if not apu_vsync_match:
         raise SystemExit("Could not locate InfoNES_pAPUVsync() in the upstream APU renderer.")
     apu_vsync = apu_vsync_match.group(0)
