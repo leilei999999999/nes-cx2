@@ -26,7 +26,8 @@ extern "C" {
 #define IRQ_USB (1U << 9)
 #endif
 #define NES_AUDIO_CAPACITY 32768U
-#define NES_AUDIO_START_BUFFER_MS 96U
+#define NES_AUDIO_START_BUFFER_MS 128U
+#define NES_AUDIO_RATE_WINDOW_MS 512U
 #define NES_AUDIO_RATE 44100U
 static UsbAudio *g_usb;
 static AudioBuffer g_stream;
@@ -358,8 +359,8 @@ int nes_audio_open(int samples_per_sync, int sample_rate) {
 }
 static bool nes_audio_start_if_ready(void) {
     if (!g_usb || g_stream_started) return true;
-    /* Queue the 64 ms USB schedule plus a 32 ms PCM reserve. The reserve
-     * lets the next APU frame arrive before USB asks for more future samples. */
+    /* Queue the 64 ms USB schedule plus a 64 ms PCM reserve. The larger reserve
+     * absorbs normal frame-time jitter without adding steady-state playback latency. */
     uint32_t needed = (uint32_t)(((uint64_t)g_sample_rate *
                                  NES_AUDIO_START_BUFFER_MS + 999ULL) / 1000ULL) + 2U;
     if (g_write < needed) return true;
@@ -417,7 +418,7 @@ static void nes_audio_update_source_rate(void) {
      * usb_audio_service(). It remains valid across the TI-OS/native clock swap. */
     uint32_t frame = usb_audio_frame_count(g_usb);
     uint32_t elapsed_frames = frame - g_pace_last_frame;
-    if (elapsed_frames < 96U) return;
+    if (elapsed_frames < NES_AUDIO_RATE_WINDOW_MS) return;
     uint32_t produced = g_output_samples - g_pace_last_samples;
     if (produced) {
         uint64_t measured64 = (uint64_t)produced * 1000ULL / elapsed_frames;
@@ -428,7 +429,8 @@ static void nes_audio_update_source_rate(void) {
             g_pace_source_rate = measured;
             g_pace_measured = true;
         } else {
-            g_pace_source_rate = (g_pace_source_rate + measured * 3U) / 4U;
+            /* Smooth half-second measurements to avoid audible resampler pitch jumps. */
+            g_pace_source_rate = (g_pace_source_rate * 3U + measured + 2U) / 4U;
         }
         usb_audio_set_source_rate(g_usb, g_pace_source_rate);
     }

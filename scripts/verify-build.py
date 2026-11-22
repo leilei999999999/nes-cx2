@@ -247,7 +247,9 @@ def main() -> int:
             ("USB playback rate follows measured hardware USB frame clock",
              "usb_audio_start(g_usb, &g_stream, 0, 1, 1, 100)" in function_body(bridge, "nes_audio_start_if_ready", "bool")
              and "usb_audio_frame_count(g_usb)" in bridge
-             and "elapsed_frames < 96U" in bridge
+             and "elapsed_frames < NES_AUDIO_RATE_WINDOW_MS" in bridge
+             and "#define NES_AUDIO_RATE_WINDOW_MS 512U" in bridge
+             and "g_pace_source_rate * 3U + measured + 2U" in bridge
              and "usb_audio_set_source_rate(g_usb, g_pace_source_rate);" in bridge
              and "void usb_audio_set_source_rate(" in c_header
              and "uint32_t usb_audio_frame_count(" in c_header),
@@ -264,7 +266,7 @@ def main() -> int:
              and "USB audio open diagnostics:" in function_body(system, "InfoNES_SoundOpen", "int")),
             ("audio ring buffer is power-of-two sized", "#define NES_AUDIO_CAPACITY 32768U" in bridge),
             ("audio waits for real APU samples instead of prepending silence",
-             "#define NES_AUDIO_START_BUFFER_MS 96U" in bridge
+             "#define NES_AUDIO_START_BUFFER_MS 128U" in bridge
              and "g_stream.pcm_end = 0;" in bridge and "g_write = 0;" in bridge
              and "g_stream_started" in bridge and "NES_AUDIO_PREFILL" not in bridge
              and "if (!nes_audio_start_if_ready()) return;" in bridge),
