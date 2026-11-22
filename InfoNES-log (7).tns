@@ -1,0 +1,54 @@
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/mm1.nes.tns
+No speaker on Nspire
+ROM path: /documents/mm1.nes.tns
+SRAM path: /documents/mm1.nes.srm
+State path: /documents/mm1.nes.sta
+Loading details: title=mm1 region=Unknown mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): ready
+ROM loaded
+FrameSkip=0
+USB audio stopped: ready
+USB audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=271 start=8 checked=271 next=463 generated=12080 cmd=00080011 sts=00004008 frindex=00000611 periodic=134dd000 expected=134dd000 async=13628000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=5446..21495; pcm_failed=1; pcm_missed=0; APU calls=17 samples=12495 nonzero[p1
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=6219 start=8 checked=271 next=463 generated=12080 cmd=00080011 sts=00004008 frindex=00003ff0 periodic=134dd000 expected=134dd000 async=13628000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=12080..28110; pcm_failed=1; pcm_missed=0; APU calls=26 samples=19110 nonzero[p1,p2,tri,noise,dpcm]=0,0,0,0,0 peaks=0,0,0,0,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/USB-Audio-Tone-Test.nes.tns
+No speaker on Nspire
+ROM path: /documents/USB-Audio-Tone-Test.nes.tns
+SRAM path: /documents/USB-Audio-Tone-Test.nes.srm
+State path: /documents/USB-Audio-Tone-Test.nes.sta
+Loading details: title=USB-Audio-Tone-Test region=Unknown mapper=0 prg=16KB chr=8KB
+ROM: PRG=1x16KB CHR=1x8KB info1=0x00 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): ready
+ROM loaded
+FrameSkip=0
+USB audio stopped: ready
+USB audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=237 start=8 checked=236 next=428 generated=10533 cmd=00080011 sts=00004000 frindex=00002d76 periodic=12601000 expected=12601000 async=1274c000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=4740..20760; pcm_failed=1; pcm_missed=0; APU calls=16 samples=11760 nonzero[p1
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=2432 start=8 checked=236 next=428 generated=10533 cmd=00080011 sts=00004008 frindex=00003211 periodic=12601000 expected=12601000 async=1274c000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=10267..26640; pcm_failed=1; pcm_missed=0; APU calls=24 samples=17640 nonzero[p1,p2,tri,noise,dpcm]=8875,0,0,0,0 peaks=255,0,0,0,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/megaman1.nes.tns
+No speaker on Nspire
+ROM path: /documents/megaman1.nes.tns
+SRAM path: /documents/megaman1.nes.srm
+State path: /documents/megaman1.nes.sta
+Loading details: title=megaman1 region=NTSC mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x08
+USB audio open: ready (44100 Hz, 735 samples/frame): ready
+ROM loaded
+FrameSkip=0
+USB audio stopped: ready
+USB audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=271 start=8 checked=270 next=462 generated=12031 cmd=00080011 sts=00004000 frindex=00001403 periodic=12621000 expected=12621000 async=1276c000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=5424..21495; pcm_failed=1; pcm_missed=0; APU calls=17 samples=12495 nonzero[p1
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=4346 start=8 checked=270 next=462 generated=12031 cmd=00080011 sts=00004008 frindex=0000135f periodic=12621000 expected=12621000 async=1276c000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=12031..28110; pcm_failed=1; pcm_missed=0; APU calls=26 samples=19110 nonzero[p1,p2,tri,noise,dpcm]=0,0,0,0,0 peaks=0,0,0,0,0
+Shutdown rc=0
