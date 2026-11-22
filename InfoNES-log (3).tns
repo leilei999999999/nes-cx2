@@ -1,0 +1,82 @@
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/USB-Audio-Tone-Test.nes.tns
+No speaker on Nspire
+ROM path: /documents/USB-Audio-Tone-Test.nes.tns
+SRAM path: /documents/USB-Audio-Tone-Test.nes.srm
+State path: /documents/USB-Audio-Tone-Test.nes.sta
+Loading details: title=USB-Audio-Tone-Test region=Unknown mapper=0 prg=16KB chr=8KB
+ROM: PRG=1x16KB CHR=1x8KB info1=0x00 info2=0x00
+USB audio open: unavailable (44100 Hz, 735 samples/frame): Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2
+USB audio open diagnostics: error=Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2; device=No USB audio device probed; stream=not captured; control=none; transfer=none; queue=0..0; pcm_failed=0; pcm_missed=0; APU calls=0 samples=0 nonzero[p1,p2,tri,noise,dpcm]=0,0,0,0,0 peaks=0,0,0,0,0
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2; device=No USB audio device probed; stream=not captured; control=none; transfer=none; queue=0..0; pcm_failed=0; pcm_missed=0; APU calls=0 samples=0 nonzero[p1,p2,tri,noise,dpcm]=0,0,0,0,0 peaks=0,0,0,0,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/mm1.nes.tns
+No speaker on Nspire
+ROM path: /documents/mm1.nes.tns
+SRAM path: /documents/mm1.nes.srm
+State path: /documents/mm1.nes.sta
+Loading details: title=mm1 region=Unknown mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x00
+USB audio open: unavailable (44100 Hz, 735 samples/frame): Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2
+USB audio open diagnostics: error=Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2; device=No USB audio device probed; stream=not captured; control=none; transfer=none; queue=0..0; pcm_failed=0; pcm_missed=0; APU calls=0 samples=0 nonzero[p1,p2,tri,noise,dpcm]=0,0,0,0,0 peaks=0,0,0,0,0
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2; device=No USB audio device probed; stream=not captured; control=none; transfer=none; queue=0..0; pcm_failed=0; pcm_missed=0; APU calls=0 samples=0 nonzero[p1,p2,tri,noise,dpcm]=0,0,0,0,0 peaks=0,0,0,0,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/mm1.nes.tns
+No speaker on Nspire
+ROM path: /documents/mm1.nes.tns
+SRAM path: /documents/mm1.nes.srm
+State path: /documents/mm1.nes.sta
+Loading details: title=mm1 region=Unknown mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x00
+USB audio open: unavailable (44100 Hz, 735 samples/frame): Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2
+USB audio open diagnostics: error=Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2; device=No USB audio device probed; stream=not captured; control=none; transfer=none; queue=0..0; pcm_failed=0; pcm_missed=0
+ROM loaded
+FrameSkip=0
+Quit
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/USB-Audio-Tone-Test.nes.tns
+No speaker on Nspire
+ROM path: /documents/USB-Audio-Tone-Test.nes.tns
+SRAM path: /documents/USB-Audio-Tone-Test.nes.srm
+State path: /documents/USB-Audio-Tone-Test.nes.sta
+Loading details: title=USB-Audio-Tone-Test region=Unknown mapper=0 prg=16KB chr=8KB
+ROM: PRG=1x16KB CHR=1x8KB info1=0x00 info2=0x00
+USB audio open: unavailable (44100 Hz, 735 samples/frame): Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2
+USB audio open diagnostics: error=Connect USB audio via OTG before launching; USB regs PORT=0000088d CMD=00080000 OTG=008e0010 STS=00001000 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=1 controller_running=0 speed=2; device=No USB audio device probed; stream=not captured; control=none; transfer=none; queue=0..0; pcm_failed=0; pcm_missed=0
+ROM loaded
+FrameSkip=0
+Quit
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/mm1.nes.tns
+No speaker on Nspire
+ROM path: /documents/mm1.nes.tns
+SRAM path: /documents/mm1.nes.srm
+State path: /documents/mm1.nes.sta
+Loading details: title=mm1 region=Unknown mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x00
+USB audio open: unavailable (44100 Hz, 735 samples/frame): No usable UAC1/UAC2 USB audio interface; USB regs PORT=0000000d CMD=00080031 OTG=008e0010 STS=0000c008 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=0 controller_running=1 speed=2
+USB audio open diagnostics: error=No usable UAC1/UAC2 USB audio interface; USB regs PORT=0000000d CMD=00080031 OTG=008e0010 STS=0000c008 CAP=01000010; port_connected=1 port_enabled=1 port_suspended=0 controller_running=1 speed=2; device=05e3:0610 HS no usable playback format; declared power=100mA; stream=not captured; control=phase=transfer initial_cmd=00080001 initial_sts=0000000a initial_fr=00003831 start_sts=0000800a start_fr=00003831 live_cmd=00080021 live_sts=0000800a live_fr=00003832 list=1271b000 expected=1271b000 current=1271
+ROM loaded
+FrameSkip=0
+Quit
+Shutdown rc=0
