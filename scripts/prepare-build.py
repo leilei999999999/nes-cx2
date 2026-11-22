@@ -757,12 +757,12 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     # makes it tick thousands of times too quickly. Use sample-rate-scaled
     # phase increments: 240 Hz for envelopes, 120 Hz for sweeps.
     if "#include <stdint.h>" not in apu_text:
-        apu_text = "#include <stdint.h>\\n" + apu_text
+        apu_text = "#include <stdint.h>\n" + apu_text
     for phase in ("ApuC1EnvPhase", "ApuC1SweepPhase",
                   "ApuC2EnvPhase", "ApuC2SweepPhase", "ApuC4EnvPhase"):
         apu_text, changed = re.subn(
-            rf"(?m)^([ \\t]*)DWORD([ \\t]+{phase}[ \\t]*;)",
-            rf"\\g<1>int32_t\\g<2>",
+            rf"(?m)^([ \t]*)DWORD([ \t]+{phase}[ \t]*;)",
+            rf"\g<1>int32_t\g<2>",
             apu_text,
         )
         if changed != 1:
@@ -776,16 +776,16 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     )
     for phase, old_step, delay, tick_rate in phase_timers:
         pattern = (
-            rf"(?m)^([ \\t]*){phase}[ \\t]*-=[ \\t]*{old_step};\\n"
-            rf"\\1while[ \\t]*\\([ \\t]*{phase}[ \\t]*<[ \\t]*0[ \\t]*\\)\\n"
-            rf"\\1\\{{\\n"
-            rf"\\1  {phase}[ \\t]*\\+=[ \\t]*{delay};"
+            rf"(?m)^([ \t]*){phase}[ \t]*-=[ \t]*{old_step};\n"
+            rf"\1while[ \t]*\([ \t]*{phase}[ \t]*<[ \t]*0[ \t]*\)\n"
+            rf"\1\{{\n"
+            rf"\1  {phase}[ \t]*\+=[ \t]*{delay};"
         )
         replacement = (
-            rf"\\g<1>{phase} -= {tick_rate};\\n"
-            rf"\\g<1>while ( {phase} < 0 )\\n"
-            rf"\\g<1>{{\\n"
-            rf"\\g<1>  {phase} += (int32_t)({delay} * ApuSampleRate);"
+            rf"\g<1>{phase} -= {tick_rate};\n"
+            rf"\g<1>while ( {phase} < 0 )\n"
+            rf"\g<1>{{\n"
+            rf"\g<1>  {phase} += (int32_t)({delay} * ApuSampleRate);"
         )
         apu_text, changed = re.subn(pattern, replacement, apu_text)
         if changed != 1:
