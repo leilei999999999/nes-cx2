@@ -244,6 +244,11 @@ def main() -> int:
              and "NES_TIMER_TICKS_PER_SECOND 32768U" in bridge and not re.search(r"(?<![A-Za-z0-9_])clock\s*\(", bridge)),
             ("timer state is restored on audio close", "nes_timer_restore();" in function_body(bridge, "nes_audio_close", "void")),
             ("USB device is opened and streaming starts", "usb_audio_open(nes_audio_now_ms" in bridge and "usb_audio_start(g_usb" in bridge),
+            ("USB playback rate follows measured NES sample production",
+             "usb_audio_start(g_usb, &g_stream, 0, 1, 2, 100)" in bridge
+             and "nes_audio_update_source_rate();" in bridge
+             and "usb_audio_set_source_rate(g_usb, g_pace_source_rate);" in bridge
+             and "void usb_audio_set_source_rate(" in c_header),
             ("USB service failures are surfaced", "usb_audio_service(g_usb)" in bridge and "g_stream.failed = true;" in bridge),
             ("USB diagnostics include device descriptor and stream state",
              "usb_audio_describe(g_usb" in bridge and "usb_audio_capture_stream(g_usb)" in bridge
