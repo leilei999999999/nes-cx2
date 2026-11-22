@@ -241,7 +241,7 @@ def main() -> int:
             ("USB header has C linkage guard", 'extern "C" {' in c_header and c_header.count('extern "C" {') == 1
              and "}" + chr(10) + "#endif" in c_header),
             ("hardware timer is used instead of process clock", "NES_TIMER_VALUE" in bridge
-             and "NES_TIMER_TICKS_PER_SECOND 32768U" in bridge and "clock(" not in bridge),
+             and "NES_TIMER_TICKS_PER_SECOND 32768U" in bridge and not re.search(r"(?<![A-Za-z0-9_])clock\\s*\\(", bridge)),
             ("timer state is restored on audio close", "nes_timer_restore();" in function_body(bridge, "nes_audio_close", "void")),
             ("USB device is opened and streaming starts", "usb_audio_open(nes_audio_now_ms" in bridge and "usb_audio_start(g_usb" in bridge),
             ("USB service failures are surfaced", "usb_audio_service(g_usb)" in bridge and "g_stream.failed = true;" in bridge),
@@ -319,19 +319,38 @@ def main() -> int:
     # lease and native route/state callbacks. Compilation cannot validate that
     # hardware ownership path, so make the known limitation visible in the report.
     integration_requirements = (
-        "usb_host_session_prepare",
-        "usb_audio_set_route_lookup",
-        "usb_audio_set_state_lookup",
-        "usb_controller_set_periodic_service",
+        "native_usb_ui_clock(",
+        "native_usb_ui_acquire(",
+        "usb_host_session_prepare(",
+        "usb_audio_set_route_lookup(",
+        "usb_audio_set_state_lookup(",
+        "native_usb_ui_release(",
+        "monotonic_clock_now_ticks(",
     )
     if bridge_path.is_file():
         bridge_text = bridge_path.read_text(errors="replace")
         missing = [name for name in integration_requirements if name not in bridge_text]
-        if missing:
-            warnings.append(
-                "USB host integration incomplete: missing " + ", ".join(missing) +
-                ". Successful CI checks do not prove USB DAC playback on calculator hardware."
-            )
+        check(not missing, "native USB host wake/lease and route callbacks are integrated"
+              + (": missing " + ", ".join(missing) if missing else ""), passed, failed)
+    native_sources = (
+        "src/player/native_usb_ui.c",
+        "src/player/native_usb_ui_resolver.c",
+        "src/player/native_interrupts.c",
+        "src/player/storage_mutation.c",
+        "src/platform/nspire_hardware.c",
+        "src/platform/portable_reader_platform.c",
+        "src/platform/portable_resolver.c",
+        "src/storage/usb/usb_host_session.c",
+    )
+    for rel in native_sources:
+        p = root / rel
+        check(p.is_file() and p.stat().st_size > 0,
+              f"native USB source present: {rel}", passed, failed)
+    if makefile_path.is_file():
+        makefile = makefile_path.read_text(errors="replace")
+        for rel in native_sources:
+            obj = rel.rsplit(".", 1)[0] + ".o"
+            check(obj in makefile, f"Makefile links native USB object {obj}", passed, failed)
     warnings.append(
         "Physical playback has not been tested by CI; use USB-Audio-Tone-Test.nes.tns "
         "with a class-compliant USB audio DAC and confirm an audible steady tone."
