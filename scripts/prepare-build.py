@@ -751,6 +751,46 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     if not apu_source.is_file():
         raise SystemExit("Missing NES APU renderer: src/InfoNES_pAPU.cpp")
     apu_text = apu_source.read_text()
+    # Drive the legacy APU envelope and sweep dividers at their real clock
+    # rates. The upstream code subtracts a few units per PCM sample, but
+    # checks an unsigned phase against zero; changing only the type to signed
+    # makes it tick thousands of times too quickly. Use sample-rate-scaled
+    # phase increments: 240 Hz for envelopes, 120 Hz for sweeps.
+    if "#include <stdint.h>" not in apu_text:
+        apu_text = "#include <stdint.h>\\n" + apu_text
+    for phase in ("ApuC1EnvPhase", "ApuC1SweepPhase",
+                  "ApuC2EnvPhase", "ApuC2SweepPhase", "ApuC4EnvPhase"):
+        apu_text, changed = re.subn(
+            rf"(?m)^([ \\t]*)DWORD([ \\t]+{phase}[ \\t]*;)",
+            rf"\\g<1>int32_t\\g<2>",
+            apu_text,
+        )
+        if changed != 1:
+            raise SystemExit(f"Expected exactly one APU phase declaration for {phase}")
+    phase_timers = (
+        ("ApuC1EnvPhase", 4, "ApuC1EnvDelay", 240),
+        ("ApuC2EnvPhase", 4, "ApuC2EnvDelay", 240),
+        ("ApuC4EnvPhase", 4, "ApuC4EnvDelay", 240),
+        ("ApuC1SweepPhase", 2, "ApuC1SweepDelay", 120),
+        ("ApuC2SweepPhase", 2, "ApuC2SweepDelay", 120),
+    )
+    for phase, old_step, delay, tick_rate in phase_timers:
+        pattern = (
+            rf"(?m)^([ \\t]*){phase}[ \\t]*-=[ \\t]*{old_step};\\n"
+            rf"\\1while[ \\t]*\\([ \\t]*{phase}[ \\t]*<[ \\t]*0[ \\t]*\\)\\n"
+            rf"\\1\\{{\\n"
+            rf"\\1  {phase}[ \\t]*\\+=[ \\t]*{delay};"
+        )
+        replacement = (
+            rf"\\g<1>{phase} -= {tick_rate};\\n"
+            rf"\\g<1>while ( {phase} < 0 )\\n"
+            rf"\\g<1>{{\\n"
+            rf"\\g<1>  {phase} += (int32_t)({delay} * ApuSampleRate);"
+        )
+        apu_text, changed = re.subn(pattern, replacement, apu_text)
+        if changed != 1:
+            raise SystemExit(f"Expected exactly one correctly-indented APU timer block for {phase}")
+    apu_source.write_text(apu_text)
     apu_header = out / "src/InfoNES_pAPU.h"
     if not apu_header.is_file():
         raise SystemExit("Missing NES APU quality header: src/InfoNES_pAPU.h")
