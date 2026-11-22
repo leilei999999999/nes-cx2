@@ -15,6 +15,12 @@ BRIDGE = r'''/* NES APU -> nMedia USB Audio Class output bridge. */
 #include <os.h>
 #include "../audio/usb_audio.h"
 #include "../audio/audio_buffer.h"
+extern "C" {
+#include "../player/native_usb_ui.h"
+#include "../player/native_interrupts.h"
+#include "../platform/nspire_hardware.h"
+#include "../storage/usb/usb_host_session.h"
+}
 #include "NesNspire_Audio.h"
 #ifndef IRQ_USB
 #define IRQ_USB (1U << 9)
@@ -45,6 +51,11 @@ static char g_error[320] = "USB audio not initialized";
 static uint32_t g_timer_last, g_timer_saved_load, g_timer_saved_control, g_timer_saved_clock;
 static uint64_t g_timer_ticks;
 static bool g_timer_started, g_timer_saved;
+static uint32_t g_player_timer_control, g_player_timer_clock;
+static const volatile uint32_t *g_native_clock_counter;
+static uint32_t g_native_clock_hz, g_native_clock_last, g_native_clock_fraction;
+static bool g_native_clock_active;
+static bool g_native_ui_owned, g_native_host_owned;
 static void nes_timer_restore(void) {
     if (!g_timer_saved) return;
     NES_TIMER_CONTROL &= ~0x80U;
@@ -84,13 +95,206 @@ static bool nes_timer_start(void) {
     nes_timer_restore();
     return false;
 }
-static uint32_t nes_audio_now_ms(void) {
-    if (!g_timer_started) return 0;
-    uint32_t current = NES_TIMER_VALUE;
-    g_timer_ticks += (uint32_t)(g_timer_last - current);
-    g_timer_last = current;
-    return (uint32_t)((g_timer_ticks * 1000ULL) / NES_TIMER_TICKS_PER_SECOND);
+static uint64_t nes_clock_ticks_now(void) {
+    if (g_native_clock_active && g_native_clock_counter && g_native_clock_hz) {
+        uint32_t current = *g_native_clock_counter;
+        uint32_t elapsed = current - g_native_clock_last;
+        uint64_t scaled = (uint64_t)elapsed * NES_TIMER_TICKS_PER_SECOND +
+                          g_native_clock_fraction;
+        g_native_clock_last = current;
+        g_timer_ticks += scaled / g_native_clock_hz;
+        g_native_clock_fraction = (uint32_t)(scaled % g_native_clock_hz);
+        return g_timer_ticks;
+    }
+    if (g_timer_started) {
+        uint32_t current = NES_TIMER_VALUE;
+        g_timer_ticks += (uint32_t)(g_timer_last - current);
+        g_timer_last = current;
+    }
+    return g_timer_ticks;
 }
+extern "C" uint64_t monotonic_clock_now_ticks(void) {
+    return nes_clock_ticks_now();
+}
+extern "C" uint32_t monotonic_clock_now_ms(void) {
+    return (uint32_t)((nes_clock_ticks_now() * 1000ULL) / NES_TIMER_TICKS_PER_SECOND);
+}
+static uint32_t nes_audio_now_ms(void) {
+    return monotonic_clock_now_ms();
+}
+static bool nes_usb_progress(void *context) {
+    (void)context;
+    return true;
+}
+static bool nes_timer_enter_native(const volatile uint32_t *counter, uint32_t hz) {
+    if (!g_timer_started || !g_timer_saved || !counter || !hz || g_native_clock_active)
+        return false;
+    (void)nes_clock_ticks_now();
+    g_player_timer_control = NES_TIMER_CONTROL;
+    g_player_timer_clock = NES_TIMER_CLOCK;
+    NES_TIMER_CONTROL &= ~0x80U;
+    NES_TIMER_CONTROL = g_timer_saved_control & ~0x80U;
+    NES_TIMER_CLOCK = g_timer_saved_clock;
+    NES_TIMER_LOAD = g_timer_saved_load;
+    NES_TIMER_CONTROL = g_timer_saved_control;
+    g_native_clock_counter = counter;
+    g_native_clock_hz = hz;
+    g_native_clock_last = *counter;
+    g_native_clock_fraction = 0;
+    g_native_clock_active = true;
+    return true;
+}
+static bool nes_timer_leave_native(void) {
+    if (!g_native_clock_active) return true;
+    (void)nes_clock_ticks_now();
+    g_native_clock_active = false;
+    g_native_clock_counter = NULL;
+    NES_TIMER_CONTROL &= ~0x80U;
+    NES_TIMER_CONTROL = g_player_timer_control & ~0x80U;
+    NES_TIMER_CLOCK = g_player_timer_clock;
+    NES_TIMER_LOAD = UINT32_MAX;
+    NES_TIMER_CONTROL = NES_TIMER_ENABLE_32BIT;
+    uint32_t previous = NES_TIMER_VALUE;
+    for (unsigned polls = 0; polls < 131072U; ++polls) {
+        uint32_t current = NES_TIMER_VALUE;
+        uint32_t delta = previous - current;
+        if (polls >= 32768U && UINT32_MAX - current <= 8192U && delta && delta < 8192U) {
+            g_timer_last = current;
+            return true;
+        }
+        previous = current;
+    }
+    return false;
+}
+static bool nes_native_enter_clock(void) {
+    const volatile uint32_t *counter = NULL;
+    uint32_t hz = 0;
+    if (!native_usb_ui_clock(&counter, &hz, nes_usb_progress, NULL)) {
+        strcpy(g_error, "Native USB clock discovery failed");
+        return false;
+    }
+    if (!nes_timer_enter_native(counter, hz)) {
+        strcpy(g_error, "Could not enter native USB clock domain");
+        return false;
+    }
+    return true;
+}
+static bool nes_native_usb_open_stream(void) {
+    unsigned saved = native_critical_enter();
+    if (!nes_native_enter_clock()) {
+        native_critical_leave(saved);
+        return false;
+    }
+    unsigned kernel = TCT_Local_Control_Interrupts(0);
+    native_critical_enter();
+    bool ready = false;
+    int ui_result = native_usb_ui_acquire(nes_usb_progress, NULL);
+    if (ui_result) {
+        snprintf(g_error, sizeof(g_error), "Native USB UI acquisition failed (%d)", ui_result);
+        goto cleanup;
+    }
+    g_native_ui_owned = true;
+    native_critical_leave(0);
+    {
+        char message[160] = "Preparing USB host...";
+        if (!usb_host_session_prepare(nes_audio_now_ms, nes_usb_progress, NULL,
+                                      message, sizeof(message))) {
+            snprintf(g_error, sizeof(g_error), "USB host preparation failed: %.120s", message);
+            native_critical_enter();
+            goto cleanup;
+        }
+    }
+    g_native_host_owned = true;
+    usb_audio_set_route_lookup(native_usb_ui_bus_route, NULL);
+    usb_audio_set_state_lookup(native_usb_ui_bus_device_state, NULL);
+    usb_audio_set_progress(nes_usb_progress, NULL);
+    {
+        const char *status = NULL;
+        g_usb = usb_audio_open(nes_audio_now_ms, &status);
+        if (!g_usb) {
+            snprintf(g_error, sizeof(g_error), "USB audio discovery failed: %.200s",
+                     status ? status : "unknown");
+            native_critical_enter();
+            goto cleanup;
+        }
+    }
+    if (!usb_audio_start(g_usb, &g_stream, 0, 1, 1, 100)) {
+        snprintf(g_error, sizeof(g_error), "USB audio start failed: %.200s",
+                 usb_audio_error(g_usb));
+        usb_audio_set_progress(NULL, NULL);
+        if (usb_audio_close(g_usb)) g_usb = NULL;
+        else g_failed = true;
+        native_critical_enter();
+        goto cleanup;
+    }
+    ready = true;
+    strcpy(g_error, "ready");
+    native_critical_enter();
+cleanup:
+    if (!ready && !g_usb && g_native_host_owned) {
+        usb_host_session_release();
+        g_native_host_owned = false;
+    }
+    if (!ready && !g_usb && g_native_ui_owned) {
+        int release_result = native_usb_ui_release();
+        if (release_result)
+            snprintf(g_error, sizeof(g_error), "%.140s; native UI release=%d",
+                     g_error, release_result);
+        else
+            g_native_ui_owned = false;
+    }
+    if (!nes_timer_leave_native()) {
+        snprintf(g_error, sizeof(g_error), "%.170s; player timer restore failed", g_error);
+        ready = false;
+    }
+    TCT_Local_Control_Interrupts(kernel);
+    native_critical_leave(saved);
+    return ready;
+}
+static bool nes_native_usb_shutdown(void) {
+    if (!g_usb && !g_native_host_owned && !g_native_ui_owned) return true;
+    unsigned saved = native_critical_enter();
+    if (!nes_native_enter_clock()) {
+        native_critical_leave(saved);
+        return false;
+    }
+    unsigned kernel = TCT_Local_Control_Interrupts(0);
+    native_critical_enter();
+    native_critical_leave(0);
+    bool closed = true;
+    if (g_usb) {
+        usb_audio_set_progress(NULL, NULL);
+        (void)usb_audio_pause(g_usb);
+        if (usb_audio_close(g_usb)) g_usb = NULL;
+        else {
+            strcpy(g_error, "USB teardown pending; audio memory retained for DMA safety");
+            closed = false;
+        }
+    }
+    native_critical_enter();
+    if (closed && g_native_host_owned) {
+        usb_host_session_release();
+        g_native_host_owned = false;
+    }
+    if (closed && g_native_ui_owned) {
+        int release_result = native_usb_ui_release();
+        if (release_result) {
+            snprintf(g_error, sizeof(g_error), "Native USB UI restore failed (%d)",
+                     release_result);
+            closed = false;
+        } else g_native_ui_owned = false;
+    }
+    if (!nes_timer_leave_native()) {
+        strcpy(g_error, "Player timer restore failed after USB shutdown");
+        closed = false;
+    }
+    TCT_Local_Control_Interrupts(kernel);
+    native_critical_leave(saved);
+    return closed;
+}
+extern "C" void app_task_io_pause_service(bool paused) { (void)paused; }
+extern "C" bool sram_uses_native_clone(void) { return false; }
+extern "C" uint32_t sram_expected_ttbr(void) { return 0; }
 extern "C" bool audio_platform_cx2(void) {
     return *(volatile uint32_t *)0x900a0000U == 0x202U;
 }
@@ -138,25 +342,15 @@ int nes_audio_open(int samples_per_sync, int sample_rate) {
     g_output_calls = g_output_samples = 0;
     memset(g_nonzero, 0, sizeof(g_nonzero)); memset(g_peak, 0, sizeof(g_peak));
     usb_audio_prefer_rate(g_sample_rate); usb_audio_prefer_precision(16, 2);
-    const char *status = NULL;
-    g_usb = usb_audio_open(nes_audio_now_ms, &status);
-    if (!g_usb) {
-        char usb_debug[192];
-        usb_audio_debug_snapshot(usb_debug, sizeof(usb_debug));
-        snprintf(g_error, sizeof(g_error), "%.100s; %.190s",
-                 status ? status : "USB audio open failed", usb_debug);
-        free(g_pcm); g_pcm = NULL; memset(&g_stream, 0, sizeof(g_stream)); return 0;
-    }
-    if (!usb_audio_start(g_usb, &g_stream, 0, 1, 1, 100)) {
-        snprintf(g_error, sizeof(g_error), "%s", usb_audio_error(g_usb));
-        if (usb_audio_close(g_usb)) {
-            g_usb = NULL; free(g_pcm); g_pcm = NULL; memset(&g_stream, 0, sizeof(g_stream));
-        } else {
-            g_failed = true; strcat(g_error, " (USB teardown pending; buffer retained)");
+    if (!nes_native_usb_open_stream()) {
+        if (!g_usb && !g_failed && !g_native_host_owned && !g_native_ui_owned) {
+            free(g_pcm); g_pcm = NULL; memset(&g_stream, 0, sizeof(g_stream));
         }
         return 0;
     }
-    g_failed = false; strcpy(g_error, "ready"); return 1;
+    g_failed = false;
+    strcpy(g_error, "ready");
+    return 1;
 }
 void nes_audio_output(int samples, const unsigned char *p1, const unsigned char *p2,
  const unsigned char *tri, const unsigned char *noise, const unsigned char *dpcm) {
@@ -194,13 +388,7 @@ void nes_audio_service(void) {
     }
 }
 void nes_audio_close(void) {
-    if (g_usb) {
-        usb_audio_pause(g_usb);
-        if (!usb_audio_close(g_usb)) {
-            strcpy(g_error, "USB teardown pending; audio memory retained for DMA safety"); return;
-        }
-        g_usb = NULL;
-    }
+    if (!nes_native_usb_shutdown()) return;
     free(g_pcm); g_pcm = NULL; memset(&g_stream, 0, sizeof(g_stream));
     g_write = 0; g_failed = false;
     nes_timer_restore();
@@ -256,6 +444,22 @@ AUDIO_FILES = [
     "src/audio/audio_buffer.c", "src/audio/pcm_format.h", "src/audio/input.h",
     "src/storage/usb/usb_route.h",
 ]
+NATIVE_FILES = [
+    "src/player/native_usb_ui.c", "src/player/native_usb_ui.h",
+    "src/player/native_usb_ui_resolver.c", "src/player/native_usb_ui_resolver.h",
+    "src/player/native_usb_ui_patterns.h", "src/player/native_usb_bus.inc",
+    "src/player/native_usb_timing.h", "src/player/native_interrupts.c",
+    "src/player/native_interrupts.h", "src/player/storage_mutation.c",
+    "src/player/storage_mutation.h", "src/platform/nspire_hardware.c",
+    "src/platform/nspire_hardware.h", "src/platform/portable_reader_platform.c",
+    "src/platform/portable_reader_platform.h", "src/platform/portable_resolver.c",
+    "src/platform/portable_resolver.h", "src/platform/portable_patterns.h",
+    "src/platform/portable_storage_snapshot.h", "src/platform/arm926_ram_span.h",
+    "src/platform/arm926_cpu_ram_span.h", "src/storage/usb/usb_host_session.c",
+    "src/storage/usb/usb_host_session.h", "src/storage/usb/usb_phase_timing.h",
+    "src/storage/usb/usb_registers.h", "src/storage/usb/usb_autoconnect.h",
+    "src/sram.h",
+]
 def find_root(base, marker):
     matches = list(base.rglob(marker))
     if not matches:
@@ -288,6 +492,12 @@ def main():
     for rel in AUDIO_FILES:
         src = nmedia / rel
         if not src.is_file(): raise SystemExit(f"Missing nMedia source file: {src}")
+        dst = out / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+    for rel in NATIVE_FILES:
+        src = nmedia / rel
+        if not src.is_file(): raise SystemExit(f"Missing nMedia native USB source file: {src}")
         dst = out / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
@@ -358,8 +568,8 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
 
     makefile = out / "Makefile"
     m = makefile.read_text()
-    m = m.replace("\tsrc/ndless/InfoNES_System_Ndless.o \\\n", "\tsrc/ndless/InfoNES_System_Ndless.o \\\n\tsrc/ndless/NesNspire_Audio.o \\\n\tsrc/audio/usb_audio.o \\\n\tsrc/audio/usb_audio_formats.o \\\n\tsrc/audio/audio_buffer.o \\\n")
-    m = m.replace("CFLAGS := -O3 -marm -Isrc -Wall", "CFLAGS := -O3 -marm -Isrc -Isrc/audio -Isrc/storage/usb -Wall")
+    m = m.replace("\tsrc/ndless/InfoNES_System_Ndless.o \\\n", "\tsrc/ndless/InfoNES_System_Ndless.o \\\n\tsrc/ndless/NesNspire_Audio.o \\\n\tsrc/audio/usb_audio.o \\\n\tsrc/audio/usb_audio_formats.o \\\n\tsrc/audio/audio_buffer.o \\\n\tsrc/player/native_usb_ui.o \\\n\tsrc/player/native_usb_ui_resolver.o \\\n\tsrc/player/native_interrupts.o \\\n\tsrc/player/storage_mutation.o \\\n\tsrc/platform/nspire_hardware.o \\\n\tsrc/platform/portable_reader_platform.o \\\n\tsrc/platform/portable_resolver.o \\\n\tsrc/storage/usb/usb_host_session.o \\\n")
+    m = m.replace("CFLAGS := -O3 -marm -Isrc -Wall", "CFLAGS := -O3 -marm -Isrc -Isrc/audio -Isrc/player -Isrc/platform -Isrc/storage/usb -ffunction-sections -fdata-sections -Wall")
     makefile.write_text(m)
     system = out / "src/ndless/InfoNES_System_Ndless.cpp"
     s = system.read_text()
@@ -399,6 +609,16 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
 }""", s)
     if "nes_audio_output(s, w1" not in s or "nes_audio_service();" not in s:
         raise SystemExit("Failed to patch the NES sound hooks; upstream source has changed.")
+    bridge_source = (out / "src/ndless/NesNspire_Audio.cpp").read_text()
+    native_contract = (
+        "native_usb_ui_clock(", "native_usb_ui_acquire(",
+        "usb_host_session_prepare(", "usb_audio_set_route_lookup(",
+        "usb_audio_set_state_lookup(", "native_usb_ui_release(",
+        "monotonic_clock_now_ticks(",
+    )
+    missing_native = [symbol for symbol in native_contract if symbol not in bridge_source]
+    if missing_native:
+        raise SystemExit("Incomplete native USB audio integration: " + ", ".join(missing_native))
     s = s.replace('"%s/InfoNES.log"', '"%s/InfoNES-log.tns"')
     system.write_text(s)
     (out / "THIRD_PARTY_NOTICES.md").write_text(
