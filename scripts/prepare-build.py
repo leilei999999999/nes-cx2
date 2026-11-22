@@ -763,9 +763,10 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     if quality_changes != 1:
         raise SystemExit("Expected exactly one pAPU_QUALITY=3 setting in InfoNES_pAPU.h")
     apu_header.write_text(apu_header_text)
-    apu_vsync = "void InfoNES_pAPUVsync(void)\\n{\\n"
-    if apu_vsync not in apu_text:
-        raise SystemExit("Unexpected InfoNES_pAPUVsync() implementation.")
+    apu_vsync_match = re.search(r"void\\s+InfoNES_pAPUVsync\\s*\\(\\s*void\\s*\\)\\s*\\{\\s*", apu_text)
+    if not apu_vsync_match:
+        raise SystemExit("Could not locate InfoNES_pAPUVsync() in the upstream APU renderer.")
+    apu_vsync = apu_vsync_match.group(0)
     zero_channels = apu_vsync + "  /* Never reuse tail samples when a channel renderer exits early/disabled. */\n  for (unsigned int i = 0; i < ApuSamplesPerSync; ++i)\n    for (unsigned int channel = 0; channel < 5; ++channel)\n      wave_buffers[channel][i] = 0;\n"
     if "Never reuse tail samples" not in apu_text:
         apu_text = apu_text.replace(apu_vsync, zero_channels, 1)
