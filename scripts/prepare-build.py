@@ -30,6 +30,8 @@ static int16_t g_pulse_mix[31];
 static int16_t g_tnd_mix[16][16][128];
 static int32_t g_dc_x, g_dc_y;
 static bool g_failed;
+static uint32_t g_output_calls, g_output_samples;
+static uint32_t g_nonzero[5], g_peak[5];
 static char g_error[320] = "USB audio not initialized";
 /* Own timer 0 for audio timing, then restore the exact OS state at exit.
  * This follows the verified timer setup used by nMedia on CX II. */
@@ -133,6 +135,8 @@ int nes_audio_open(int samples_per_sync, int sample_rate) {
     g_stream.pcm_begin = 0; g_stream.pcm_end = NES_AUDIO_PREFILL;
     g_stream.channels = 2; g_stream.pcm_bits = 16; g_stream.source_bits = 16;
     g_write = NES_AUDIO_PREFILL;
+    g_output_calls = g_output_samples = 0;
+    memset(g_nonzero, 0, sizeof(g_nonzero)); memset(g_peak, 0, sizeof(g_peak));
     usb_audio_prefer_rate(g_sample_rate); usb_audio_prefer_precision(16, 2);
     const char *status = NULL;
     g_usb = usb_audio_open(nes_audio_now_ms, &status);
@@ -162,7 +166,13 @@ void nes_audio_output(int samples, const unsigned char *p1, const unsigned char 
         g_stream.failed = true; g_failed = true; return;
     }
     g_stream.pcm_begin = consumed;
+    ++g_output_calls; g_output_samples += (uint32_t)samples;
     for (int i = 0; i < samples; ++i) {
+        unsigned raw[5] = {p1[i], p2[i], tri[i], noise[i], dpcm[i]};
+        for (unsigned c = 0; c < 5; ++c) {
+            if (raw[c]) ++g_nonzero[c];
+            if (raw[c] > g_peak[c]) g_peak[c] = raw[c];
+        }
         unsigned pulse = (unsigned)(p1[i] / 17U) + (unsigned)(p2[i] / 17U);
         if (pulse > 30) pulse = 30;
         unsigned t = tri[i] >> 4, n = noise[i] & 15U, d = dpcm[i] & 127U;
@@ -201,11 +211,17 @@ void nes_audio_diagnostics(char *out, size_t capacity) {
     usb_audio_describe(g_usb, device, sizeof(device));
     if (g_usb) usb_audio_capture_stream(g_usb);
     snprintf(out, capacity,
-        "error=%s; device=%s; stream=%s; control=%s; transfer=%s; queue=%lu..%lu; pcm_failed=%u; pcm_missed=%u",
+        "error=%s; device=%s; stream=%s; control=%s; transfer=%s; queue=%lu..%lu; pcm_failed=%u; pcm_missed=%u; APU calls=%lu samples=%lu nonzero[p1,p2,tri,noise,dpcm]=%lu,%lu,%lu,%lu,%lu peaks=%lu,%lu,%lu,%lu,%lu",
         g_error, device, usb_audio_last_stream(), usb_audio_last_control(),
         usb_audio_transfer_fault(), (unsigned long)g_stream.pcm_begin,
         (unsigned long)g_stream.pcm_end, g_stream.failed ? 1U : 0U,
-        g_stream.pcm_missed ? 1U : 0U);
+        g_stream.pcm_missed ? 1U : 0U, (unsigned long)g_output_calls,
+        (unsigned long)g_output_samples, (unsigned long)g_nonzero[0],
+        (unsigned long)g_nonzero[1], (unsigned long)g_nonzero[2],
+        (unsigned long)g_nonzero[3], (unsigned long)g_nonzero[4],
+        (unsigned long)g_peak[0], (unsigned long)g_peak[1],
+        (unsigned long)g_peak[2], (unsigned long)g_peak[3],
+        (unsigned long)g_peak[4]);
 }
 const char *nes_audio_error(void) { return g_error; }
 bool nes_audio_failed(void) { return g_failed; }
@@ -372,7 +388,12 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
   }
   return ok;
 }""", s)
-    s = re.sub(r"void InfoNES_SoundClose\(void\)\s*\{\s*\}", "void InfoNES_SoundClose(void) { nes_audio_close(); }", s)
+    s = re.sub(r"void InfoNES_SoundClose\(void\)\s*\{\s*\}", """void InfoNES_SoundClose(void) {
+  char details[768];
+  nes_audio_diagnostics(details, sizeof(details));
+  log_message("NES APU audio diagnostics: %s", details);
+  nes_audio_close();
+}""", s)
     s = re.sub(r"void InfoNES_SoundOutput\(int s, BYTE \*w1, BYTE \*w2, BYTE \*w3, BYTE \*w4, BYTE \*w5\)\s*\{[^}]*\}", """void InfoNES_SoundOutput(int s, BYTE *w1, BYTE *w2, BYTE *w3, BYTE *w4, BYTE *w5) {
   nes_audio_output(s, w1, w2, w3, w4, w5);
 }""", s)
