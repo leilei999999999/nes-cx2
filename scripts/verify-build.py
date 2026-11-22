@@ -250,7 +250,8 @@ def main() -> int:
              and "elapsed_frames < NES_AUDIO_RATE_WINDOW_MS" in bridge
              and "#define NES_AUDIO_RATE_WINDOW_MS 512U" in bridge
              and "g_pace_source_rate * 3U + measured + 2U" in bridge
-             and "usb_audio_set_source_rate(g_usb, g_pace_source_rate);" in bridge
+             and "usb_audio_set_source_rate(g_usb, rate);" in
+                 function_body(bridge, "nes_audio_apply_buffer_servo", "void")
              and "void usb_audio_set_source_rate(" in c_header
              and "uint32_t usb_audio_frame_count(" in c_header),
             ("USB service failures are surfaced", "usb_audio_service(g_usb)" in bridge and "g_stream.failed = true;" in bridge),
@@ -273,6 +274,16 @@ def main() -> int:
         ]
         for message, ok in checks:
             check(ok, message, passed, failed)
+
+        servo_body = function_body(bridge, "nes_audio_apply_buffer_servo", "void")
+        service_body = function_body(bridge, "nes_audio_service", "void")
+        check("#define NES_AUDIO_QUEUE_TARGET_MS 128U" in bridge
+              and "g_write - consumed" in servo_body
+              and "NES_AUDIO_SERVO_GAIN_PPM" in servo_body
+              and "nes_audio_apply_buffer_servo();" in service_body
+              and "NES_AUDIO_SERVO_LIMIT_PPM" in servo_body,
+              "PCM queue servo corrects long-term clock drift within the existing 128 ms buffer",
+              passed, failed)
 
         apu_path = root / "src/InfoNES_pAPU.cpp"
         usb_source_path = root / "src/audio/usb_audio.c"
