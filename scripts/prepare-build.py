@@ -37,8 +37,8 @@ static int16_t g_tnd_mix[16][16][128];
 static int32_t g_dc_x, g_dc_y;
 static bool g_failed;
 static uint32_t g_output_calls, g_output_samples;
-static uint32_t g_pace_last_ms, g_pace_last_samples, g_pace_source_rate;
-static bool g_pace_clock_started, g_pace_measured;
+static uint32_t g_pace_last_frame, g_pace_last_samples, g_pace_source_rate;
+static bool g_pace_measured;
 static uint32_t g_nonzero[5], g_peak[5];
 static char g_error[320] = "USB audio not initialized";
 /* Own timer 0 for audio timing, then restore the exact OS state at exit.
@@ -220,9 +220,10 @@ static bool nes_native_usb_open_stream(void) {
             goto cleanup;
         }
     }
-    /* Start conservatively until measured APU production establishes the real
-     * emulation clock. A fixed 44.1 kHz source clock outruns slow CX II frames. */
-    if (!usb_audio_start(g_usb, &g_stream, 0, 1, 2, 100)) {
+    /* Start at the emulator's nominal source rate. Measure actual APU output
+     * against the USB frame clock before adjusting, so the PCM ring cannot
+     * fill for the entire 192 ms USB scheduling lead at half speed. */
+    if (!usb_audio_start(g_usb, &g_stream, 0, 1, 1, 100)) {
         snprintf(g_error, sizeof(g_error), "USB audio start failed: %.200s",
                  usb_audio_error(g_usb));
         usb_audio_set_progress(NULL, NULL);
@@ -231,9 +232,10 @@ static bool nes_native_usb_open_stream(void) {
         native_critical_enter();
         goto cleanup;
     }
-    g_pace_last_ms = g_pace_last_samples = 0;
-    g_pace_source_rate = 22050U;
-    g_pace_clock_started = g_pace_measured = false;
+    g_pace_last_frame = usb_audio_frame_count(g_usb);
+    g_pace_last_samples = g_output_samples;
+    g_pace_source_rate = g_sample_rate;
+    g_pace_measured = false;
     ready = true;
     strcpy(g_error, "ready");
     native_critical_enter();
@@ -347,9 +349,10 @@ int nes_audio_open(int samples_per_sync, int sample_rate) {
     g_stream.channels = 2; g_stream.pcm_bits = 16; g_stream.source_bits = 16;
     g_write = NES_AUDIO_PREFILL;
     g_output_calls = g_output_samples = 0;
-    g_pace_last_ms = g_pace_last_samples = 0;
-    g_pace_source_rate = 22050U;
-    g_pace_clock_started = g_pace_measured = false;
+    g_pace_last_frame = 0;
+    g_pace_last_samples = 0;
+    g_pace_source_rate = g_sample_rate;
+    g_pace_measured = false;
     memset(g_nonzero, 0, sizeof(g_nonzero)); memset(g_peak, 0, sizeof(g_peak));
     usb_audio_prefer_rate(g_sample_rate); usb_audio_prefer_precision(16, 2);
     if (!nes_native_usb_open_stream()) {
@@ -387,20 +390,17 @@ void nes_audio_output(int samples, const unsigned char *p1, const unsigned char 
         g_pcm[slot * 2U] = (int16_t)y; g_pcm[slot * 2U + 1U] = (int16_t)y; ++g_write;
     }
     g_stream.pcm_end = g_write;
-    if (!g_pace_clock_started) {
-        g_pace_last_ms = nes_audio_now_ms();
-        g_pace_last_samples = g_output_samples;
-        g_pace_clock_started = true;
-    }
 }
 static void nes_audio_update_source_rate(void) {
-    if (!g_usb || !g_pace_clock_started) return;
-    uint32_t now = nes_audio_now_ms();
-    uint32_t elapsed = now - g_pace_last_ms;
-    if (elapsed < 180U) return;
+    if (!g_usb) return;
+    /* u->frame is advanced from the controller's 1 ms FRINDEX clock inside
+     * usb_audio_service(). It remains valid across the TI-OS/native clock swap. */
+    uint32_t frame = usb_audio_frame_count(g_usb);
+    uint32_t elapsed_frames = frame - g_pace_last_frame;
+    if (elapsed_frames < 96U) return;
     uint32_t produced = g_output_samples - g_pace_last_samples;
     if (produced) {
-        uint64_t measured64 = (uint64_t)produced * 1000ULL / elapsed;
+        uint64_t measured64 = (uint64_t)produced * 1000ULL / elapsed_frames;
         if (measured64 < 12000ULL) measured64 = 12000ULL;
         if (measured64 > 66000ULL) measured64 = 66000ULL;
         uint32_t measured = (uint32_t)measured64;
@@ -408,22 +408,23 @@ static void nes_audio_update_source_rate(void) {
             g_pace_source_rate = measured;
             g_pace_measured = true;
         } else {
-            g_pace_source_rate = (g_pace_source_rate * 3U + measured) / 4U;
+            g_pace_source_rate = (g_pace_source_rate + measured * 3U) / 4U;
         }
         usb_audio_set_source_rate(g_usb, g_pace_source_rate);
     }
-    g_pace_last_ms = now;
+    g_pace_last_frame = frame;
     g_pace_last_samples = g_output_samples;
 }
 void nes_audio_service(void) {
     if (!g_usb || g_failed) return;
-    nes_audio_update_source_rate();
     if (!usb_audio_service(g_usb)) {
         g_failed = true; g_stream.failed = true;
         snprintf(g_error, sizeof(g_error), "%s [timer=%lu ms raw=%08lx]",
                  usb_audio_error(g_usb), (unsigned long)nes_audio_now_ms(),
                  (unsigned long)NES_TIMER_VALUE);
+        return;
     }
+    nes_audio_update_source_rate();
 }
 void nes_audio_close(void) {
     if (!nes_native_usb_shutdown()) return;
@@ -577,12 +578,15 @@ def main():
     # Expose a foreground-only source-rate adjustment so streamed PCM follows
     # the actual NES frame production rate instead of assuming 60 FPS.
     rate_decl = "void usb_audio_set_source_rate(UsbAudio *u, uint32_t source_rate);"
+    frame_decl = "uint32_t usb_audio_frame_count(const UsbAudio *u);"
+    marker = "bool usb_audio_service(UsbAudio *u);"
+    if marker not in header_text:
+        raise SystemExit("Unexpected usb_audio.h: usb_audio_service declaration not found.")
     if rate_decl not in header_text:
-        marker = "bool usb_audio_service(UsbAudio *u);"
-        if marker not in header_text:
-            raise SystemExit("Unexpected usb_audio.h: usb_audio_service declaration not found.")
         header_text = header_text.replace(marker, rate_decl + chr(10) + marker, 1)
-        usb_header.write_text(header_text)
+    if frame_decl not in header_text:
+        header_text = header_text.replace(marker, frame_decl + chr(10) + marker, 1)
+    usb_header.write_text(header_text)
     schedule = out / "src/audio/usb_audio_schedule.inc"
     schedule_text = schedule.read_text()
     start_tail = """    if (!wait_status(u, PSS, PSS)) {
@@ -605,7 +609,16 @@ void usb_audio_set_source_rate(UsbAudio *u, uint32_t source_rate)
         if start_tail not in schedule_text:
             raise SystemExit("Unexpected usb_audio_schedule.inc: usb_audio_start tail not found.")
         schedule_text = schedule_text.replace(start_tail, rate_function, 1)
-        schedule.write_text(schedule_text)
+    frame_function = """
+
+/* Number of elapsed 1 ms USB frames since stream start. */
+uint32_t usb_audio_frame_count(const UsbAudio *u)
+{
+    return u ? u->frame : 0;
+}"""
+    if "uint32_t usb_audio_frame_count(" not in schedule_text:
+        schedule_text += frame_function
+    schedule.write_text(schedule_text)
 
     (out / "src/ndless/NesNspire_Audio.cpp").write_text(BRIDGE)
     (out / "src/ndless/NesNspire_Audio.h").write_text(HEADER)
