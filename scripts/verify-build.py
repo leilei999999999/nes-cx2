@@ -278,13 +278,13 @@ def main() -> int:
         servo_body = function_body(bridge, "nes_audio_apply_buffer_servo", "void")
         service_body = function_body(bridge, "nes_audio_service", "void")
         check("#define NES_AUDIO_QUEUE_TARGET_MS 128U" in bridge
-              and "#define NES_AUDIO_SERVO_GAIN_PPM 40000U" in bridge
-              and "#define NES_AUDIO_SERVO_LIMIT_PPM 20000" in bridge
+              and "#define NES_AUDIO_SERVO_GAIN_PPM 300000U" in bridge
+              and "#define NES_AUDIO_SERVO_LIMIT_PPM 120000" in bridge
               and "g_write - consumed" in servo_body
               and "NES_AUDIO_SERVO_GAIN_PPM" in servo_body
               and "nes_audio_apply_buffer_servo();" in service_body
               and "NES_AUDIO_SERVO_LIMIT_PPM" in servo_body,
-              "stronger bounded PCM queue servo corrects long-term drift without increasing startup buffer",
+              "strong bounded PCM queue servo corrects clock drift without increasing startup buffer",
               passed, failed)
 
         apu_path = root / "src/InfoNES_pAPU.cpp"

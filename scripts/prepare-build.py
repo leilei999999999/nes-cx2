@@ -28,8 +28,8 @@ extern "C" {
 #define NES_AUDIO_CAPACITY 32768U
 #define NES_AUDIO_START_BUFFER_MS 128U
 #define NES_AUDIO_QUEUE_TARGET_MS 128U
-#define NES_AUDIO_SERVO_GAIN_PPM 40000U
-#define NES_AUDIO_SERVO_LIMIT_PPM 20000
+#define NES_AUDIO_SERVO_GAIN_PPM 300000U
+#define NES_AUDIO_SERVO_LIMIT_PPM 120000
 #define NES_AUDIO_RATE_WINDOW_MS 512U
 #define NES_AUDIO_RATE 44100U
 static UsbAudio *g_usb;
@@ -451,9 +451,10 @@ static void nes_audio_update_source_rate(void) {
     g_pace_last_frame = frame;
     g_pace_last_samples = g_output_samples;
 }
-/* Correct the small long-term clock mismatch by watching the PCM reserve.
- * The target includes the 64 ms USB schedule plus the existing 64 ms reserve;
- * this changes playback rate by at most 1.2%, rather than increasing latency. */
+/* Correct long-term source/device clock mismatch from the live PCM reserve.
+ * A 30% proportional gain moves the playback rate far enough to recover from
+ * the measured drift; clamp at +/-12% and smooth the correction to avoid jumps.
+ * This changes the playback clock, not the startup buffer or scheduling lead. */
 static void nes_audio_apply_buffer_servo(void) {
     if (!g_usb || !g_stream_started || !g_pace_source_rate) return;
     uint32_t consumed = (uint32_t)(usb_audio_position(g_usb) >> 32);
