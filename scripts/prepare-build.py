@@ -775,21 +775,19 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
         ("ApuC2SweepPhase", 2, "ApuC2SweepDelay", 120),
     )
     for phase, old_step, delay, tick_rate in phase_timers:
-        pattern = (
-            rf"(?m)^([ \t]*){phase}[ \t]*-=[ \t]*{old_step};\n"
-            rf"\1while[ \t]*\([ \t]*{phase}[ \t]*<[ \t]*0[ \t]*\)\n"
-            rf"\1\{{\n"
-            rf"\1  {phase}[ \t]*\+=[ \t]*{delay};"
-        )
-        replacement = (
-            rf"\g<1>{phase} -= {tick_rate};\n"
-            rf"\g<1>while ( {phase} < 0 )\n"
-            rf"\g<1>{{\n"
-            rf"\g<1>  {phase} += (int32_t)({delay} * ApuSampleRate);"
-        )
-        apu_text, changed = re.subn(pattern, replacement, apu_text)
+        decrement = rf"(?m)^([ \t]*){phase}[ \t]*-=[ \t]*{old_step};[ \t]*$"
+        apu_text, changed = re.subn(
+            decrement, rf"\g<1>{phase} -= {tick_rate};", apu_text)
         if changed != 1:
-            raise SystemExit(f"Expected exactly one correctly-indented APU timer block for {phase}")
+            raise SystemExit(f"Expected exactly one APU countdown for {phase}")
+        divider = rf"(?m)^([ \t]*){phase}[ \t]*\+=[ \t]*{delay};[ \t]*$"
+        apu_text, changed = re.subn(
+            divider,
+            rf"\g<1>{phase} += (int32_t)({delay} * ApuSampleRate);",
+            apu_text,
+        )
+        if changed != 1:
+            raise SystemExit(f"Expected exactly one APU divider reload for {phase}")
     apu_source.write_text(apu_text)
     apu_header = out / "src/InfoNES_pAPU.h"
     if not apu_header.is_file():
