@@ -1,0 +1,256 @@
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/mm1.nes.tns
+No speaker on Nspire
+ROM path: /documents/mm1.nes.tns
+SRAM path: /documents/mm1.nes.srm
+State path: /documents/mm1.nes.sta
+Loading details: title=mm1 region=Unknown mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+USB audio stopped: Decoded audio buffer underrun [timer=19382 ms raw=fff6cf2f]
+USB audio diagnostics: error=Decoded audio buffer underrun [timer=19382 ms raw=fff6cf2f]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=18281 start=8 checked=18281 next=18344 generated=783527 cmd=00080011 sts=00004008 frindex=00003802 periodic=13728000 expected=13728000 async=13873000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=780127..783510; p
+Quit
+NES APU audio diagnostics: error=Decoded audio buffer underrun [timer=19382 ms raw=fff6cf2f]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=18281 start=8 checked=18281 next=18344 generated=783527 cmd=00080011 sts=00004008 frindex=00003e2b periodic=13728000 expected=13728000 async=13873000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=780127..783510; pcm_failed=1; pcm_missed=1; started=1 pace=41973Hz frame=18281 measured=1; APU calls=1066 samples=783510 nonzero[p1,p2,tri,noise,dpcm]=207815,211695,346407,119024,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/mm1.nes.tns
+No speaker on Nspire
+ROM path: /documents/mm1.nes.tns
+SRAM path: /documents/mm1.nes.srm
+State path: /documents/mm1.nes.sta
+Loading details: title=mm1 region=Unknown mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+USB audio stopped: Decoded audio buffer underrun [timer=5669 ms raw=fffdadc6]
+USB audio diagnostics: error=Decoded audio buffer underrun [timer=5669 ms raw=fffdadc6]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=4544 start=8 checked=4544 next=4607 generated=192583 cmd=00080011 sts=00004008 frindex=00003c89 periodic=13582000 expected=13582000 async=136cd000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=189236..192570; pcm_f
+Quit
+NES APU audio diagnostics: error=Decoded audio buffer underrun [timer=5669 ms raw=fffdadc6]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=4544 start=8 checked=4544 next=4607 generated=192583 cmd=00080011 sts=00004008 frindex=00003383 periodic=13582000 expected=13582000 async=136cd000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=189236..192570; pcm_failed=1; pcm_missed=1; started=1 pace=41047Hz applied=40801Hz frame=4544 measured=1 reserve=2640/5645 servo=-5981ppm; APU calls=262 samples=192570 nonzero[p1,p2,tri,noise,dpcm]=18390,15440,49124,0,0 peaks=255,255,255,0,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/mm1.nes.tns
+No speaker on Nspire
+ROM path: /documents/mm1.nes.tns
+SRAM path: /documents/mm1.nes.srm
+State path: /documents/mm1.nes.sta
+Loading details: title=mm1 region=Unknown mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+USB audio stopped: Decoded audio buffer underrun [timer=17414 ms raw=fff7ccf0]
+USB audio diagnostics: error=Decoded audio buffer underrun [timer=17414 ms raw=fff7ccf0]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=16299 start=8 checked=16299 next=16362 generated=657112 cmd=00080011 sts=00004008 frindex=00000035 periodic=135f8000 expected=135f8000 async=13743000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=653875..657090; p
+Quit
+NES APU audio diagnostics: error=Decoded audio buffer underrun [timer=17414 ms raw=fff7ccf0]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=16299 start=8 checked=16299 next=16362 generated=657112 cmd=00080011 sts=00004008 frindex=00003f29 periodic=135f8000 expected=135f8000 async=13743000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=653875..657090; pcm_failed=1; pcm_missed=1; started=1 pace=39279Hz applied=38494Hz frame=16299 measured=1 reserve=2675/5645 servo=-19993ppm; APU calls=894 samples=657090 nonzero[p1,p2,tri,noise,dpcm]=142215,138750,274304,75555,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/mm1.nes.tns
+No speaker on Nspire
+ROM path: /documents/mm1.nes.tns
+SRAM path: /documents/mm1.nes.srm
+State path: /documents/mm1.nes.sta
+Loading details: title=mm1 region=Unknown mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=385754 start=8 checked=385754 next=385818 generated=13939646 cmd=00080011 sts=00004008 frindex=000014e8 periodic=135f8000 expected=135f8000 async=13743000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=13937354..13944420; pcm_failed=0; pcm_missed=0; started=1 pace=34019Hz applied=35534Hz frame=385754 measured=1 reserve=6331/5645 servo=44529ppm; APU calls=18972 samples=13944420 nonzero[p1,p2,tri,noise,dpcm]=6179842,6568259,848052,8540015,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/famidash.nes.tns
+No speaker on Nspire
+ROM path: /documents/famidash.nes.tns
+SRAM path: /documents/famidash.nes.srm
+State path: /documents/famidash.nes.sta
+Loading details: title=famidash region=NTSC mapper=4 prg=2048KB chr=256KB
+ROM: PRG=128x16KB CHR=32x8KB info1=0x4a info2=0x08
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+SRAM loaded
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=27368 start=8 checked=27367 next=27431 generated=1003372 cmd=00080011 sts=00004008 frindex=00003ee5 periodic=13818000 expected=13818000 async=13963000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=1001128..1006950; pcm_failed=0; pcm_missed=0; started=1 pace=35962Hz applied=35266Hz frame=27368 measured=1 reserve=5122/5645 servo=-19341ppm; APU calls=1370 samples=1006950 nonzero[p1,p2,tri,noise,dpcm]=358805,419933,110346,763170,795270 peaks=255,255,255,15,120
+SRAM saved
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man (U).nes.tns
+SRAM path: /documents/Mega Man (U).nes.srm
+State path: /documents/Mega Man (U).nes.sta
+Loading details: title=Mega Man (U) region=NTSC mapper=66 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x44
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=8349 start=8 checked=8348 next=8412 generated=334595 cmd=00080011 sts=00004008 frindex=00000301 periodic=12601000 expected=12601000 async=1274c000 port=0000000d otg=008e2e10 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=332146..338100; pcm_failed=0; pcm_missed=0; started=1 pace=39008Hz applied=38542Hz frame=8349 measured=1 reserve=5258/5645 servo=-11936ppm; APU calls=460 samples=338100 nonzero[p1,p2,tri,noise,dpcm]=52754,49831,156642,0,0 peaks=255,255,255,0,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man 2 (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man 2 (U).nes.tns
+SRAM path: /documents/Mega Man 2 (U).nes.srm
+State path: /documents/Mega Man 2 (U).nes.sta
+Loading details: title=Mega Man 2 (U) region=NTSC mapper=1 prg=256KB chr=0KB
+ROM: PRG=16x16KB CHR=0x8KB info1=0x11 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=53450 start=8 checked=53449 next=53513 generated=2021265 cmd=00080011 sts=00004008 frindex=00001389 periodic=12ff5000 expected=12ff5000 async=13140000 port=0000000d otg=008e2e10 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=2019129..2024925; pcm_failed=0; pcm_missed=0; started=1 pace=34314Hz applied=33599Hz frame=53450 measured=1 reserve=5094/5645 servo=-20827ppm; APU calls=2755 samples=2024925 nonzero[p1,p2,tri,noise,dpcm]=786621,960520,44861,407088,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man 3 (U) [!].nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man 3 (U) [!].nes.tns
+SRAM path: /documents/Mega Man 3 (U) [!].nes.srm
+State path: /documents/Mega Man 3 (U) [!].nes.sta
+Loading details: title=Mega Man 3 (U) [!] region=NTSC mapper=4 prg=256KB chr=128KB
+ROM: PRG=16x16KB CHR=16x8KB info1=0x40 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=104164 start=8 checked=104163 next=104227 generated=3637010 cmd=00080011 sts=00004008 frindex=00001bf3 periodic=135d3000 expected=135d3000 async=1371e000 port=0000000d otg=008e2e10 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=3634929..3640455; pcm_failed=0; pcm_missed=0; started=1 pace=33776Hz applied=32581Hz frame=104164 measured=1 reserve=4824/5645 servo=-35375ppm; APU calls=4953 samples=3640455 nonzero[p1,p2,tri,noise,dpcm]=2199901,2428824,2541253,3108869,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man 4 (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man 4 (U).nes.tns
+SRAM path: /documents/Mega Man 4 (U).nes.srm
+State path: /documents/Mega Man 4 (U).nes.sta
+Loading details: title=Mega Man 4 (U) region=NTSC mapper=4 prg=512KB chr=0KB
+ROM: PRG=32x16KB CHR=0x8KB info1=0x40 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=42604 start=8 checked=42603 next=42667 generated=1597022 cmd=00080011 sts=00004008 frindex=00002699 periodic=13613000 expected=13613000 async=1375e000 port=0000000d otg=008e2e10 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=1594792..1601565; pcm_failed=0; pcm_missed=0; started=1 pace=34144Hz applied=35224Hz frame=42604 measured=1 reserve=6072/5645 servo=31620ppm; APU calls=2179 samples=1601565 nonzero[p1,p2,tri,noise,dpcm]=478730,550987,788237,884867,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man 5 (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man 5 (U).nes.tns
+SRAM path: /documents/Mega Man 5 (U).nes.srm
+State path: /documents/Mega Man 5 (U).nes.sta
+Loading details: title=Mega Man 5 (U) region=NTSC mapper=4 prg=256KB chr=256KB
+ROM: PRG=16x16KB CHR=32x8KB info1=0x40 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=36487 start=8 checked=36486 next=36550 generated=1325158 cmd=00080011 sts=00004008 frindex=00003ac7 periodic=13035000 expected=13035000 async=13180000 port=0000000d otg=008e2e10 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=1323058..1328880; pcm_failed=0; pcm_missed=0; started=1 pace=33535Hz applied=32857Hz frame=36487 measured=1 reserve=5121/5645 servo=-20231ppm; APU calls=1808 samples=1328880 nonzero[p1,p2,tri,noise,dpcm]=540278,395367,617325,823508,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man 6 (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man 6 (U).nes.tns
+SRAM path: /documents/Mega Man 6 (U).nes.srm
+State path: /documents/Mega Man 6 (U).nes.sta
+Loading details: title=Mega Man 6 (U) region=NTSC mapper=4 prg=512KB chr=0KB
+ROM: PRG=32x16KB CHR=0x8KB info1=0x40 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=32774 start=8 checked=32773 next=32837 generated=1226264 cmd=00080011 sts=00004008 frindex=00002b6a periodic=137b9000 expected=137b9000 async=13904000 port=0000000d otg=008e2e10 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=1224187..1229655; pcm_failed=0; pcm_missed=0; started=1 pace=33979Hz applied=32670Hz frame=32774 measured=1 reserve=4766/5645 servo=-38529ppm; APU calls=1673 samples=1229655 nonzero[p1,p2,tri,noise,dpcm]=481309,523711,480618,841798,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man (U).nes.tns
+SRAM path: /documents/Mega Man (U).nes.srm
+State path: /documents/Mega Man (U).nes.sta
+Loading details: title=Mega Man (U) region=NTSC mapper=66 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x44
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+FrameSkip=1
+USB audio stopped: Decoded audio buffer underrun [timer=27834 ms raw=fff2e1f3]
+USB audio diagnostics: error=Decoded audio buffer underrun [timer=27834 ms raw=fff2e1f3]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=26135 start=8 checked=26135 next=26198 generated=1455341 cmd=00080011 sts=00004008 frindex=00002ebf periodic=13739000 expected=13739000 async=13884000 port=0000000d otg=008e2e10 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=1450935..1455300
+FrameSkip=2
+FrameSkip=3
+FrameSkip=2
+FrameSkip=1
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=Decoded audio buffer underrun [timer=27834 ms raw=fff2e1f3]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=26135 start=8 checked=26135 next=26198 generated=1455341 cmd=00080011 sts=00004008 frindex=00000c3a periodic=13739000 expected=13739000 async=13884000 port=0000000d otg=008e2e10 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=1450935..1455300; pcm_failed=1; pcm_missed=1; started=1 pace=57737Hz applied=51545Hz frame=26135 measured=1 reserve=3621/5645 servo=-107252ppm; APU calls=1980 samples=1455300 nonzero[p1,p2,tri,noise,dpcm]=253421,245279,734026,48354,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man (U).nes.tns
+SRAM path: /documents/Mega Man (U).nes.srm
+State path: /documents/Mega Man (U).nes.sta
+Loading details: title=Mega Man (U) region=NTSC mapper=66 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x44
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=72833 start=8 checked=72832 next=72896 generated=2682267 cmd=00080011 sts=00004008 frindex=00002219 periodic=13739000 expected=13739000 async=13884000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=2679878..2686425; pcm_failed=0; pcm_missed=0; started=1 pace=36739Hz applied=37464Hz frame=72833 measured=1 reserve=5850/5645 servo=19724ppm; APU calls=3655 samples=2686425 nonzero[p1,p2,tri,noise,dpcm]=1344153,1298309,407893,568285,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man (U).nes.tns
+SRAM path: /documents/Mega Man (U).nes.srm
+State path: /documents/Mega Man (U).nes.sta
+Loading details: title=Mega Man (U) region=NTSC mapper=66 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x44
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=233236 start=8 checked=233235 next=233299 generated=9082126 cmd=00080011 sts=00004008 frindex=000036bb periodic=13739000 expected=13739000 async=13884000 port=0000000d otg=008e2e10 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=9079532..9086805; pcm_failed=0; pcm_missed=0; started=1 pace=38711Hz applied=41110Hz frame=233236 measured=1 reserve=6579/5645 servo=61977ppm; APU calls=12363 samples=9086805 nonzero[p1,p2,tri,noise,dpcm]=3705120,1850682,742951,4087724,0 peaks=255,255,255,15,0
+Shutdown rc=0
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man (U).nes.tns
+SRAM path: /documents/Mega Man (U).nes.srm
+State path: /documents/Mega Man (U).nes.sta
+Loading details: title=Mega Man (U) region=NTSC mapper=66 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x44
+USB audio open: ready (22050 Hz, 367 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=220541 start=8 checked=220541 next=220605 generated=4503888 cmd=00080011 sts=00004008 frindex=000029f6 periodic=12601000 expected=12601000 async=1274c000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=4502582..4506026; pcm_failed=0; pcm_missed=0; started=1 pace=19864Hz applied=20400Hz frame=220541 measured=1 reserve=3077/2823 servo=26977ppm; APU calls=12278 samples=4506026 nonzero[p1,p2,tri,noise,dpcm]=1671821,1567067,506457,2208663,0 peaks=255,255,255,15,0
+Shutdown rc=0
