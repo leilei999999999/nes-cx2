@@ -30,6 +30,8 @@ extern "C" {
 #define NES_AUDIO_QUEUE_TARGET_MS 128U
 #define NES_AUDIO_SERVO_GAIN_PPM 300000U
 #define NES_AUDIO_SERVO_LIMIT_PPM 120000
+#define NES_AUDIO_SERVO_UPDATE_MS 16U
+#define NES_AUDIO_SERVO_FILTER_SHIFT 4U
 #define NES_AUDIO_RATE_WINDOW_MS 512U
 #define NES_AUDIO_RATE 44100U
 static UsbAudio *g_usb;
@@ -43,6 +45,7 @@ static bool g_failed, g_stream_started;
 static uint32_t g_output_calls, g_output_samples;
 static uint32_t g_pace_last_frame, g_pace_last_samples, g_pace_source_rate;
 static uint32_t g_pace_effective_rate, g_queue_samples, g_queue_target;
+static uint32_t g_queue_last_frame;
 static int32_t g_queue_correction_ppm;
 static bool g_pace_measured;
 static uint32_t g_nonzero[5], g_peak[5];
@@ -353,6 +356,7 @@ int nes_audio_open(int samples_per_sync, int sample_rate) {
     g_queue_samples = 0;
     g_queue_target = (uint32_t)(((uint64_t)g_sample_rate *
                                  NES_AUDIO_QUEUE_TARGET_MS + 999ULL) / 1000ULL);
+    g_queue_last_frame = 0;
     g_queue_correction_ppm = 0;
     g_pace_measured = false;
     memset(g_nonzero, 0, sizeof(g_nonzero)); memset(g_peak, 0, sizeof(g_peak));
@@ -388,6 +392,7 @@ static bool nes_audio_start_if_ready(void) {
     g_queue_samples = g_write;
     g_queue_target = (uint32_t)(((uint64_t)g_sample_rate *
                                  NES_AUDIO_QUEUE_TARGET_MS + 999ULL) / 1000ULL);
+    g_queue_last_frame = usb_audio_frame_count(g_usb);
     g_queue_correction_ppm = 0;
     g_pace_measured = false;
     g_stream_started = true;
@@ -457,6 +462,12 @@ static void nes_audio_update_source_rate(void) {
  * This changes the playback clock, not the startup buffer or scheduling lead. */
 static void nes_audio_apply_buffer_servo(void) {
     if (!g_usb || !g_stream_started || !g_pace_source_rate) return;
+    /* InfoNES_Wait runs once per scanline. Do not modulate USB playback on
+     * every scanline; sample the queue at a stable 16 ms control interval. */
+    uint32_t frame = usb_audio_frame_count(g_usb);
+    if ((uint32_t)(frame - g_queue_last_frame) < NES_AUDIO_SERVO_UPDATE_MS)
+        return;
+    g_queue_last_frame = frame;
     uint32_t consumed = (uint32_t)(usb_audio_position(g_usb) >> 32);
     uint32_t queued = g_write - consumed;
     uint32_t target = (uint32_t)(((uint64_t)g_sample_rate *
@@ -470,9 +481,9 @@ static void nes_audio_apply_buffer_servo(void) {
     if (wanted > NES_AUDIO_SERVO_LIMIT_PPM) wanted = NES_AUDIO_SERVO_LIMIT_PPM;
     if (wanted < -NES_AUDIO_SERVO_LIMIT_PPM) wanted = -NES_AUDIO_SERVO_LIMIT_PPM;
 
-    /* Smooth corrections across several frames so the sound does not warble. */
+    /* A 16-sample control filter spans about 256 ms at 16 ms updates. */
     g_queue_correction_ppm =
-        (g_queue_correction_ppm * 7 + (int32_t)wanted) / 8;
+        (g_queue_correction_ppm * 15 + (int32_t)wanted) / 16;
     int64_t factor = 1000000LL + g_queue_correction_ppm;
     uint32_t rate = (uint32_t)(((uint64_t)g_pace_source_rate *
                                 (uint64_t)factor + 500000ULL) / 1000000ULL);

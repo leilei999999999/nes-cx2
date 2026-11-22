@@ -280,11 +280,16 @@ def main() -> int:
         check("#define NES_AUDIO_QUEUE_TARGET_MS 128U" in bridge
               and "#define NES_AUDIO_SERVO_GAIN_PPM 300000U" in bridge
               and "#define NES_AUDIO_SERVO_LIMIT_PPM 120000" in bridge
+              and "#define NES_AUDIO_SERVO_UPDATE_MS 16U" in bridge
+              and "#define NES_AUDIO_SERVO_FILTER_SHIFT 4U" in bridge
+              and "frame - g_queue_last_frame" in servo_body
+              and "g_queue_last_frame = frame;" in servo_body
+              and "g_queue_correction_ppm * 15" in servo_body
               and "g_write - consumed" in servo_body
               and "NES_AUDIO_SERVO_GAIN_PPM" in servo_body
               and "nes_audio_apply_buffer_servo();" in service_body
               and "NES_AUDIO_SERVO_LIMIT_PPM" in servo_body,
-              "strong bounded PCM queue servo corrects clock drift without increasing startup buffer",
+              "16 ms queue-servo cadence and slow filter limit USB resampling modulation",
               passed, failed)
 
         apu_path = root / "src/InfoNES_pAPU.cpp"
