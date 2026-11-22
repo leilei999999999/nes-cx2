@@ -26,7 +26,7 @@ extern "C" {
 #define IRQ_USB (1U << 9)
 #endif
 #define NES_AUDIO_CAPACITY 32768U
-#define NES_AUDIO_START_LEAD_MS 64U
+#define NES_AUDIO_START_BUFFER_MS 96U
 #define NES_AUDIO_RATE 44100U
 static UsbAudio *g_usb;
 static AudioBuffer g_stream;
@@ -358,10 +358,10 @@ int nes_audio_open(int samples_per_sync, int sample_rate) {
 }
 static bool nes_audio_start_if_ready(void) {
     if (!g_usb || g_stream_started) return true;
-    /* usb_audio_start() primes LEAD USB frames synchronously. Keep one extra
-     * source sample for the PCM interpolator's look-ahead read. */
+    /* Queue the 64 ms USB schedule plus a 32 ms PCM reserve. The reserve
+     * lets the next APU frame arrive before USB asks for more future samples. */
     uint32_t needed = (uint32_t)(((uint64_t)g_sample_rate *
-                                 NES_AUDIO_START_LEAD_MS + 999ULL) / 1000ULL) + 2U;
+                                 NES_AUDIO_START_BUFFER_MS + 999ULL) / 1000ULL) + 2U;
     if (g_write < needed) return true;
     if (!usb_audio_start(g_usb, &g_stream, 0, 1, 1, 100)) {
         snprintf(g_error, sizeof(g_error), "USB audio start failed: %.220s",

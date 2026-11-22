@@ -264,7 +264,7 @@ def main() -> int:
              and "USB audio open diagnostics:" in function_body(system, "InfoNES_SoundOpen", "int")),
             ("audio ring buffer is power-of-two sized", "#define NES_AUDIO_CAPACITY 32768U" in bridge),
             ("audio waits for real APU samples instead of prepending silence",
-             "#define NES_AUDIO_START_LEAD_MS 64U" in bridge
+             "#define NES_AUDIO_START_BUFFER_MS 96U" in bridge
              and "g_stream.pcm_end = 0;" in bridge and "g_write = 0;" in bridge
              and "g_stream_started" in bridge and "NES_AUDIO_PREFILL" not in bridge
              and "if (!nes_audio_start_if_ready()) return;" in bridge),
