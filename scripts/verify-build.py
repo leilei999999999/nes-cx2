@@ -267,7 +267,7 @@ def main() -> int:
              "#define NES_AUDIO_START_LEAD_MS 64U" in bridge
              and "g_stream.pcm_end = 0;" in bridge and "g_write = 0;" in bridge
              and "g_stream_started" in bridge and "NES_AUDIO_PREFILL" not in bridge
-             and "nes_audio_start_if_ready();" in bridge),
+             and "if (!nes_audio_start_if_ready()) return;" in bridge),
         ]
         for message, ok in checks:
             check(ok, message, passed, failed)
