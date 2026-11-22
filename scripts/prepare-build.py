@@ -757,7 +757,7 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     apu_header_text = apu_header.read_text()
     apu_header_text, quality_changes = re.subn(
         r"(?m)^([ \t]*#define[ \t]+pAPU_QUALITY[ \t]+)3([ \t]*)$",
-        r"\\g<1>2\\g<2>",
+        r"\g<1>2\g<2>",
         apu_header_text,
     )
     if quality_changes != 1:
