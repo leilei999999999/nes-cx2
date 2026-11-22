@@ -1,0 +1,18 @@
+NesNspire
+Program directory: /documents
+ROM browser found 10 ROM(s) in /documents
+ROM selected: /documents/mm1.nes.tns
+No speaker on Nspire
+ROM path: /documents/mm1.nes.tns
+SRAM path: /documents/mm1.nes.srm
+State path: /documents/mm1.nes.sta
+Loading details: title=mm1 region=Unknown mapper=2 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x00
+USB audio open: ready (44100 Hz, 735 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+USB audio stopped: Decoded audio buffer underrun [timer=19382 ms raw=fff6cf2f]
+USB audio diagnostics: error=Decoded audio buffer underrun [timer=19382 ms raw=fff6cf2f]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=18281 start=8 checked=18281 next=18344 generated=783527 cmd=00080011 sts=00004008 frindex=00003802 periodic=13728000 expected=13728000 async=13873000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=780127..783510; p
+Quit
+NES APU audio diagnostics: error=Decoded audio buffer underrun [timer=19382 ms raw=fff6cf2f]; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/1; stream=running=1 scheduled=1 frame=18281 start=8 checked=18281 next=18344 generated=783527 cmd=00080011 sts=00004008 frindex=00003e2b periodic=13728000 expected=13728000 async=13873000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/1 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=780127..783510; pcm_failed=1; pcm_missed=1; started=1 pace=41973Hz frame=18281 measured=1; APU calls=1066 samples=783510 nonzero[p1,p2,tri,noise,dpcm]=207815,211695,346407,119024,0 peaks=255,255,255,15,0
+Shutdown rc=0
