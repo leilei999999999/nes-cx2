@@ -581,7 +581,7 @@ def main():
         marker = "bool usb_audio_service(UsbAudio *u);"
         if marker not in header_text:
             raise SystemExit("Unexpected usb_audio.h: usb_audio_service declaration not found.")
-        header_text = header_text.replace(marker, rate_decl + "\\n" + marker, 1)
+        header_text = header_text.replace(marker, rate_decl + chr(10) + marker, 1)
         usb_header.write_text(header_text)
     schedule = out / "src/audio/usb_audio_schedule.inc"
     schedule_text = schedule.read_text()
