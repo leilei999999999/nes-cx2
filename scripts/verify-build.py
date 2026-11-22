@@ -245,7 +245,7 @@ def main() -> int:
             ("timer state is restored on audio close", "nes_timer_restore();" in function_body(bridge, "nes_audio_close", "void")),
             ("USB device is opened and streaming starts", "usb_audio_open(nes_audio_now_ms" in bridge and "usb_audio_start(g_usb" in bridge),
             ("USB playback rate follows measured hardware USB frame clock",
-             "usb_audio_start(g_usb, &g_stream, 0, 1, 1, 100)" in bridge
+             "usb_audio_start(g_usb, &g_stream, 0, 1, 2, 100)" in bridge
              and "usb_audio_frame_count(g_usb)" in bridge
              and "elapsed_frames < 96U" in bridge
              and "usb_audio_set_source_rate(g_usb, g_pace_source_rate);" in bridge
@@ -262,7 +262,7 @@ def main() -> int:
             ("emulator logs detailed USB diagnostics when device open fails",
              "nes_audio_diagnostics(details, sizeof(details));" in function_body(system, "InfoNES_SoundOpen", "int")
              and "USB audio open diagnostics:" in function_body(system, "InfoNES_SoundOpen", "int")),
-            ("audio ring buffer is power-of-two sized", "#define NES_AUDIO_CAPACITY 16384U" in bridge),
+            ("audio ring buffer is power-of-two sized", "#define NES_AUDIO_CAPACITY 32768U" in bridge),
             ("audio ring buffer has safe prefill", "#define NES_AUDIO_PREFILL 9000U" in bridge),
         ]
         for message, ok in checks:

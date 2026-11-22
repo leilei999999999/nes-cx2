@@ -25,7 +25,7 @@ extern "C" {
 #ifndef IRQ_USB
 #define IRQ_USB (1U << 9)
 #endif
-#define NES_AUDIO_CAPACITY 16384U
+#define NES_AUDIO_CAPACITY 32768U
 #define NES_AUDIO_PREFILL 9000U
 #define NES_AUDIO_RATE 44100U
 static UsbAudio *g_usb;
@@ -220,10 +220,10 @@ static bool nes_native_usb_open_stream(void) {
             goto cleanup;
         }
     }
-    /* Start at the emulator's nominal source rate. Measure actual APU output
-     * against the USB frame clock before adjusting, so the PCM ring cannot
-     * fill for the entire 192 ms USB scheduling lead at half speed. */
-    if (!usb_audio_start(g_usb, &g_stream, 0, 1, 1, 100)) {
+    /* Start at half of the nominal source rate while the USB driver fills its
+     * 192 ms schedule. The larger ring absorbs the difference until the first
+     * hardware-frame measurement can adjust playback to the game's real rate. */
+    if (!usb_audio_start(g_usb, &g_stream, 0, 1, 2, 100)) {
         snprintf(g_error, sizeof(g_error), "USB audio start failed: %.200s",
                  usb_audio_error(g_usb));
         usb_audio_set_progress(NULL, NULL);
@@ -234,7 +234,7 @@ static bool nes_native_usb_open_stream(void) {
     }
     g_pace_last_frame = usb_audio_frame_count(g_usb);
     g_pace_last_samples = g_output_samples;
-    g_pace_source_rate = g_sample_rate;
+    g_pace_source_rate = 22050U;
     g_pace_measured = false;
     ready = true;
     strcpy(g_error, "ready");
@@ -351,7 +351,7 @@ int nes_audio_open(int samples_per_sync, int sample_rate) {
     g_output_calls = g_output_samples = 0;
     g_pace_last_frame = 0;
     g_pace_last_samples = 0;
-    g_pace_source_rate = g_sample_rate;
+    g_pace_source_rate = 22050U;
     g_pace_measured = false;
     memset(g_nonzero, 0, sizeof(g_nonzero)); memset(g_peak, 0, sizeof(g_peak));
     usb_audio_prefer_rate(g_sample_rate); usb_audio_prefer_precision(16, 2);
@@ -367,10 +367,15 @@ int nes_audio_open(int samples_per_sync, int sample_rate) {
 }
 void nes_audio_output(int samples, const unsigned char *p1, const unsigned char *p2,
  const unsigned char *tri, const unsigned char *noise, const unsigned char *dpcm) {
-    if (!g_pcm || samples <= 0 || !p1 || !p2 || !tri || !noise || !dpcm) return;
+    if (g_failed || !g_pcm || samples <= 0 || !p1 || !p2 || !tri || !noise || !dpcm) return;
     uint32_t consumed = g_usb ? (uint32_t)(usb_audio_position(g_usb) >> 32) : 0;
-    if (g_write - consumed > NES_AUDIO_CAPACITY - (uint32_t)samples) {
-        g_stream.failed = true; g_failed = true; return;
+    uint32_t queued = g_write - consumed;
+    if (queued > NES_AUDIO_CAPACITY - (uint32_t)samples) {
+        g_stream.failed = true; g_failed = true;
+        snprintf(g_error, sizeof(g_error),
+                 "PCM ring overrun: queued=%lu batch=%d pace=%luHz",
+                 (unsigned long)queued, samples, (unsigned long)g_pace_source_rate);
+        return;
     }
     g_stream.pcm_begin = consumed;
     ++g_output_calls; g_output_samples += (uint32_t)samples;
@@ -438,11 +443,13 @@ void nes_audio_diagnostics(char *out, size_t capacity) {
     usb_audio_describe(g_usb, device, sizeof(device));
     if (g_usb) usb_audio_capture_stream(g_usb);
     snprintf(out, capacity,
-        "error=%s; device=%s; stream=%s; control=%s; transfer=%s; queue=%lu..%lu; pcm_failed=%u; pcm_missed=%u; APU calls=%lu samples=%lu nonzero[p1,p2,tri,noise,dpcm]=%lu,%lu,%lu,%lu,%lu peaks=%lu,%lu,%lu,%lu,%lu",
+        "error=%s; device=%s; stream=%s; control=%s; transfer=%s; queue=%lu..%lu; pcm_failed=%u; pcm_missed=%u; pace=%luHz frame=%lu measured=%u; APU calls=%lu samples=%lu nonzero[p1,p2,tri,noise,dpcm]=%lu,%lu,%lu,%lu,%lu peaks=%lu,%lu,%lu,%lu,%lu",
         g_error, device, usb_audio_last_stream(), usb_audio_last_control(),
         usb_audio_transfer_fault(), (unsigned long)g_stream.pcm_begin,
         (unsigned long)g_stream.pcm_end, g_stream.failed ? 1U : 0U,
-        g_stream.pcm_missed ? 1U : 0U, (unsigned long)g_output_calls,
+        g_stream.pcm_missed ? 1U : 0U, (unsigned long)g_pace_source_rate,
+        (unsigned long)(g_usb ? usb_audio_frame_count(g_usb) : 0U),
+        g_pace_measured ? 1U : 0U, (unsigned long)g_output_calls,
         (unsigned long)g_output_samples, (unsigned long)g_nonzero[0],
         (unsigned long)g_nonzero[1], (unsigned long)g_nonzero[2],
         (unsigned long)g_nonzero[3], (unsigned long)g_nonzero[4],
