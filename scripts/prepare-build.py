@@ -689,10 +689,10 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     if not apu_source.is_file():
         raise SystemExit("Missing NES APU renderer: src/InfoNES_pAPU.cpp")
     apu_text = apu_source.read_text()
-    apu_vsync = "void InfoNES_pAPUVsync(void)\\n{\\n"
+    apu_vsync = "void InfoNES_pAPUVsync(void)\n{\n"
     if apu_vsync not in apu_text:
         raise SystemExit("Unexpected InfoNES_pAPUVsync() implementation.")
-    zero_channels = apu_vsync + "  /* Never reuse tail samples when a channel renderer exits early/disabled. */\\n  for (unsigned int i = 0; i < ApuSamplesPerSync; ++i)\\n    for (unsigned int channel = 0; channel < 5; ++channel)\\n      wave_buffers[channel][i] = 0;\\n"
+    zero_channels = apu_vsync + "  /* Never reuse tail samples when a channel renderer exits early/disabled. */\n  for (unsigned int i = 0; i < ApuSamplesPerSync; ++i)\n    for (unsigned int channel = 0; channel < 5; ++channel)\n      wave_buffers[channel][i] = 0;\n"
     if "Never reuse tail samples" not in apu_text:
         apu_text = apu_text.replace(apu_vsync, zero_channels, 1)
         apu_source.write_text(apu_text)
