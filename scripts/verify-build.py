@@ -245,7 +245,7 @@ def main() -> int:
             ("timer state is restored on audio close", "nes_timer_restore();" in function_body(bridge, "nes_audio_close", "void")),
             ("USB device is opened and streaming starts", "usb_audio_open(nes_audio_now_ms" in bridge and "usb_audio_start(g_usb" in bridge),
             ("USB playback rate follows measured hardware USB frame clock",
-             "usb_audio_start(g_usb, &g_stream, 0, 1, 2, 100)" in bridge
+             "usb_audio_start(g_usb, &g_stream, 0, 1, 1, 100)" in function_body(bridge, "nes_audio_start_if_ready", "bool")
              and "usb_audio_frame_count(g_usb)" in bridge
              and "elapsed_frames < 96U" in bridge
              and "usb_audio_set_source_rate(g_usb, g_pace_source_rate);" in bridge
@@ -263,10 +263,27 @@ def main() -> int:
              "nes_audio_diagnostics(details, sizeof(details));" in function_body(system, "InfoNES_SoundOpen", "int")
              and "USB audio open diagnostics:" in function_body(system, "InfoNES_SoundOpen", "int")),
             ("audio ring buffer is power-of-two sized", "#define NES_AUDIO_CAPACITY 32768U" in bridge),
-            ("audio ring buffer has safe prefill", "#define NES_AUDIO_PREFILL 9000U" in bridge),
+            ("audio waits for real APU samples instead of prepending silence",
+             "#define NES_AUDIO_START_LEAD_MS 64U" in bridge
+             and "g_stream.pcm_end = 0;" in bridge and "g_write = 0;" in bridge
+             and "g_stream_started" in bridge and "NES_AUDIO_PREFILL" not in bridge
+             and "nes_audio_start_if_ready();" in bridge),
         ]
         for message, ok in checks:
             check(ok, message, passed, failed)
+
+        apu_path = root / "src/InfoNES_pAPU.cpp"
+        usb_source_path = root / "src/audio/usb_audio.c"
+        apu_text = apu_path.read_text(errors="replace") if apu_path.is_file() else ""
+        usb_source_text = usb_source_path.read_text(errors="replace") if usb_source_path.is_file() else ""
+        apu_vsync_at = apu_text.find("void InfoNES_pAPUVsync")
+        apu_reset_at = apu_text.find("Never reuse tail samples", apu_vsync_at)
+        apu_first_render_at = apu_text.find("ApuRenderingWave1();", apu_vsync_at)
+        check(apu_vsync_at >= 0 and apu_reset_at > apu_vsync_at and
+              apu_first_render_at > apu_reset_at,
+              "all five NES APU wave buffers are cleared before rendering each frame", passed, failed)
+        check("#define LEAD 64U" in usb_source_text,
+              "USB isochronous scheduling lead reduced to 64 ms", passed, failed)
 
         for rel in ("src/ndless/NesNspire_Audio.o", "src/audio/usb_audio.o",
                     "src/audio/usb_audio_formats.o", "src/audio/audio_buffer.o"):
