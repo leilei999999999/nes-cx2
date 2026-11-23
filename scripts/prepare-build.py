@@ -812,10 +812,10 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
             rf"{counter}\s*\+\+\s*;\s*\}}"
         )
         env_replacement = (
-            f"if ( {hold} ) {{\\n"
-            f"        {counter} = ({counter} - 1) & 0x0f;\\n"
-            f"      }} else if ( {counter} > 0 ) {{\\n"
-            f"        --{counter};\\n"
+            f"if ( {hold} ) {{\n"
+            f"        {counter} = ({counter} - 1) & 0x0f;\n"
+            f"      }} else if ( {counter} > 0 ) {{\n"
+            f"        --{counter};\n"
             f"      }}"
         )
         apu_text, changed = re.subn(env_block, lambda _: env_replacement, apu_text)
@@ -851,6 +851,9 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     )
     if changed != 1:
         raise SystemExit("Expected exactly one noise-volume selection")
+    # Reject escaped newline sequences accidentally inserted into C++ source.
+    if re.search(r"\\\\n", apu_text):
+        raise SystemExit("APU patch produced literal \\n text instead of real line breaks")
     apu_source.write_text(apu_text)
     apu_header = out / "src/InfoNES_pAPU.h"
     if not apu_header.is_file():
