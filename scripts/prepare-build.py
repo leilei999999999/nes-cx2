@@ -878,6 +878,41 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
 
     system = out / "src/ndless/InfoNES_System_Ndless.cpp"
     s = system.read_text()
+
+    # Calculator gamepad mapping requested for the CX II keypad:
+    #   Down = 5, Select = VAR, Start = DEL.
+    down_pattern = r"(?m)^([ \\t]*static int is_down_pressed\\(void\\)[^\\r\\n]*KEY_NSPIRE_)2(\\);[ \\t]*\\r?$"
+    s, down_changes = re.subn(down_pattern, r"\\g<1>5\\g<2>", s)
+    if down_changes != 1:
+        raise SystemExit("Expected exactly one NES Down keypad mapping (2)")
+
+    start_pattern = (
+        r"(?m)^([ \\t]*if\\s*\\(\\s*isKeyPressed\\()KEY_NSPIRE_ENTER"
+        r"(\\)\\s*\\)\\s*pad1_val\\s*\\|=\\s*\\(1\\s*<<\\s*3\\);[ \\t]*\\r?$)"
+    )
+    s, start_changes = re.subn(start_pattern, r"\\g<1>KEY_NSPIRE_DEL\\g<2>", s)
+    if start_changes != 1:
+        raise SystemExit("Expected exactly one NES Start key mapping (Enter)")
+
+    select_pattern = (
+        r"(?m)^([ \\t]*if\\s*\\(\\s*isKeyPressed\\()KEY_NSPIRE_ESC"
+        r"(\\)\\s*\\)\\s*pad1_val\\s*\\|=\\s*\\(1\\s*<<\\s*2\\);[ \\t]*\\r?$)"
+    )
+    s, select_changes = re.subn(select_pattern, r"\\g<1>KEY_NSPIRE_VAR\\g<2>", s)
+    if select_changes != 1:
+        raise SystemExit("Expected exactly one NES Select key mapping (Esc)")
+
+    s = s.replace(
+        "//   NES Right/Left/Down/Up  ← arrow keys or 6/4/2/8",
+        "//   NES Right/Left/Down/Up  ← arrow keys or 6/4/5/8",
+    )
+    s = s.replace(
+        "//   NES Start  ← Enter      NES Select ← Esc",
+        "//   NES Start  ← Del        NES Select ← Var",
+    )
+    if ("KEY_NSPIRE_5" not in s or "KEY_NSPIRE_VAR" not in s or
+            "KEY_NSPIRE_DEL" not in s):
+        raise SystemExit("NES keypad mapping verification failed")
     if '#include "NesNspire_Audio.h"' not in s:
         s = s.replace('#include "../InfoNES_pAPU.h"', '#include "../InfoNES_pAPU.h"\n#include "NesNspire_Audio.h"')
     s = s.replace("APU_Mute = 1;", "APU_Mute = 0;")
