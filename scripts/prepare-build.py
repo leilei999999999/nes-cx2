@@ -795,7 +795,7 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     for channel in ("C1", "C2", "C4"):
         reg = f"Apu{channel}d"
         counter = f"Apu{channel}EnvVol"
-        write_pattern = rf"(?m)^([ \t]*){reg} = ApuEventQueue\[event\]\.data;[ \t]*$"
+        write_pattern = rf"(?m)^([ \t]*){reg} = ApuEventQueue\[event\]\.data;[ \t]*\r?$"
         apu_text, changed = re.subn(
             write_pattern,
             rf"\g<0>\n\g<1>{counter} = 15;",
