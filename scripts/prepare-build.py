@@ -793,7 +793,7 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
     # this selection reversed, added the two values (overflowing BYTE samples),
     # counted the envelope upward, and never reloaded it to 15 on $4003/$4007/$400F.
     for channel in ("C1", "C2", "C4"):
-        reg = f"Apu{channel.lower()}d"
+        reg = f"Apu{channel}d"
         counter = f"Apu{channel}EnvVol"
         write_pattern = rf"(?m)^([ \t]*){reg} = ApuEventQueue\[event\]\.data;[ \t]*$"
         apu_text, changed = re.subn(
