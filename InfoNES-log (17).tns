@@ -1,0 +1,16 @@
+NesNspire
+Program directory: /documents
+ROM browser found 7 ROM(s) in /documents
+ROM selected: /documents/Mega Man (U).nes.tns
+No speaker on Nspire
+ROM path: /documents/Mega Man (U).nes.tns
+SRAM path: /documents/Mega Man (U).nes.srm
+State path: /documents/Mega Man (U).nes.sta
+Loading details: title=Mega Man (U) region=NTSC mapper=66 prg=128KB chr=0KB
+ROM: PRG=8x16KB CHR=0x8KB info1=0x21 info2=0x44
+USB audio open: ready (22050 Hz, 367 samples/frame): waiting for NES audio samples
+ROM loaded
+FrameSkip=0
+Quit
+NES APU audio diagnostics: error=ready; device=31b2:1002 UAC1 FS 48000Hz 16bit 2ch ep=01 feedback=00 power=100mA TT=2/2; stream=running=1 scheduled=1 frame=15699 start=8 checked=15698 next=15762 generated=344993 cmd=00080011 sts=00004008 frindex=000028aa periodic=12601000 expected=12601000 async=1274c000 port=0000000d otg=008e0010 token=00000300 address=3 tt=2/2 health_checks=0 health_errors=0 health_failures=0 health_max_ms=0; control=none; transfer=none; queue=343634..346448; pcm_failed=0; pcm_missed=0; started=1 pace=21804Hz applied=21582Hz frame=15699 measured=1 reserve=2791/2823 servo=-10161ppm; APU calls=944 samples=346448 nonzero[p1,p2,tri,noise,dpcm]=87520,87426,169178,37922,0 peaks=255,255,255,15,0
+Shutdown rc=0
