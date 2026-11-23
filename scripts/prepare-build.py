@@ -788,6 +788,69 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
         )
         if changed != 1:
             raise SystemExit(f"Expected exactly one APU divider reload for {phase}")
+    # Correct the legacy APU envelope model. Bit 4 selects constant volume;
+    # otherwise the envelope counter is the volume. The previous fork had
+    # this selection reversed, added the two values (overflowing BYTE samples),
+    # counted the envelope upward, and never reloaded it to 15 on $4003/$4007/$400F.
+    for channel in ("C1", "C2", "C4"):
+        reg = f"Apu{channel.lower()}d"
+        counter = f"Apu{channel}EnvVol"
+        write_pattern = rf"(?m)^([ \t]*){reg} = ApuEventQueue\[event\]\.data;[ \t]*$"
+        apu_text, changed = re.subn(
+            write_pattern,
+            rf"\g<0>\n\g<1>{counter} = 15;",
+            apu_text,
+        )
+        if changed != 1:
+            raise SystemExit(f"Expected exactly one {channel} envelope restart write")
+        phase = f"Apu{channel}EnvPhase"
+        hold = f"Apu{channel}Hold"
+        env_block = (
+            rf"if\s*\(\s*{hold}\s*\)\s*\{{\s*"
+            rf"{counter}\s*=\s*\(\s*{counter}\s*\+\s*1\s*\)\s*&\s*0x0f\s*;\s*\}}"
+            rf"\s*else\s+if\s*\(\s*{counter}\s*<\s*0x0f\s*\)\s*\{{\s*"
+            rf"{counter}\s*\+\+\s*;\s*\}}"
+        )
+        env_replacement = (
+            f"if ( {hold} ) {{\\n"
+            f"        {counter} = ({counter} - 1) & 0x0f;\\n"
+            f"      }} else if ( {counter} > 0 ) {{\\n"
+            f"        --{counter};\\n"
+            f"      }}"
+        )
+        apu_text, changed = re.subn(env_block, lambda _: env_replacement, apu_text)
+        if changed != 1:
+            raise SystemExit(f"Expected exactly one {channel} envelope decay block")
+    for channel, index in (("C1", 0), ("C2", 1)):
+        pulse_pattern = (
+            rf"if\s*\(\s*Apu{channel}Env\s*\)\s*\{{\s*"
+            rf"wave_buffers\[{index}\]\[i\]\s*=\s*Apu{channel}Wave"
+            rf"\[Apu{channel}Index\s*>>\s*24\]\s*\*\s*"
+            rf"\(\s*Apu{channel}Vol\s*\+\s*Apu{channel}EnvVol\s*\)\s*;\s*\}}"
+            rf"\s*else\s*\{{\s*wave_buffers\[{index}\]\[i\]\s*=\s*"
+            rf"Apu{channel}Wave\[Apu{channel}Index\s*>>\s*24\]\s*\*\s*"
+            rf"Apu{channel}Vol\s*;\s*\}}"
+        )
+        pulse_replacement = (
+            f"wave_buffers[{index}][i] = Apu{channel}Wave[Apu{channel}Index >> 24] * "
+            f"(Apu{channel}Env ? Apu{channel}Vol : Apu{channel}EnvVol);"
+        )
+        apu_text, changed = re.subn(
+            pulse_pattern, lambda _: pulse_replacement, apu_text)
+        if changed != 1:
+            raise SystemExit(f"Expected exactly one {channel} pulse-volume selection")
+    noise_pattern = (
+        r"if\s*\(\s*!ApuC4Env\s*\)\s*\{\s*"
+        r"wave_buffers\[3\]\[i\]\s*=\s*ApuC4Vol\s*;\s*\}"
+        r"\s*else\s*\{\s*wave_buffers\[3\]\[i\]\s*=\s*ApuC4EnvVol\s*\^\s*0x0f\s*;\s*\}"
+    )
+    apu_text, changed = re.subn(
+        noise_pattern,
+        "wave_buffers[3][i] = ApuC4Env ? ApuC4Vol : ApuC4EnvVol;",
+        apu_text,
+    )
+    if changed != 1:
+        raise SystemExit("Expected exactly one noise-volume selection")
     apu_source.write_text(apu_text)
     apu_header = out / "src/InfoNES_pAPU.h"
     if not apu_header.is_file():
