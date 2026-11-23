@@ -916,15 +916,21 @@ void usb_audio_debug_snapshot(char *text, size_t capacity)
         "//   NES Start  ← Enter      NES Select ← Esc",
         "//   NES Start  ← Del        NES Select ← Var",
     )
-    down_line = next(
-        (line for line in s.splitlines() if "static int is_down_pressed" in line),
-        "",
+    mapping_checks = (
+        ("NES Down", ("static int is_down_pressed", "KEY_NSPIRE_5")),
+        ("NES Start", ("pad1_val", "(1 << 3)", "KEY_NSPIRE_DEL")),
+        ("NES Select", ("pad1_val", "(1 << 2)", "KEY_NSPIRE_VAR")),
     )
-    if ("KEY_NSPIRE_5" not in down_line or
-            "pad1_val |= (1 << 3)" not in s or
-            "isKeyPressed(KEY_NSPIRE_DEL)" not in s or
-            "isKeyPressed(KEY_NSPIRE_VAR)" not in s):
-        raise SystemExit("NES keypad mapping verification failed")
+    source_lines = s.splitlines()
+    for description, tokens in mapping_checks:
+        matches = [
+            line for line in source_lines
+            if all(token in line for token in tokens)
+        ]
+        if len(matches) != 1:
+            raise SystemExit(
+                f"NES {description} mapping verification failed; found {len(matches)} matches"
+            )
     if '#include "NesNspire_Audio.h"' not in s:
         s = s.replace('#include "../InfoNES_pAPU.h"', '#include "../InfoNES_pAPU.h"\n#include "NesNspire_Audio.h"')
     s = s.replace("APU_Mute = 1;", "APU_Mute = 0;")
